@@ -424,7 +424,7 @@
     if (btn.dataset.repeat === '1') {
       state.repeatTimer = setTimeout(() => {
         state.repeatTimer = null;
-        state.repeatInterval = setInterval(() => { sendCmd(name, true); haptic(); }, REPEAT_EVERY_MS);
+        state.repeatInterval = setInterval(() => sendCmd(name, true), REPEAT_EVERY_MS);
       }, REPEAT_DELAY_MS);
     }
   }
@@ -1125,7 +1125,7 @@
       setHand($('module').dataset.hand === 'left' ? 'right' : 'left');
     });
     $('opt-sound').addEventListener('click', () => setSound(!soundOn()));
-    $('opt-haptic').addEventListener('click', () => { setHaptic(!hapticOn()); haptic(); });
+    $('opt-haptic').addEventListener('click', () => { setHaptic(!hapticOn()); haptic(); playHaptic(); });
     $('btn-forget').addEventListener('click', () => {
       if (!window.confirm('Forget this TV? You will need to pair again.')) return;
       store.del(TOKEN_KEY);
@@ -1220,7 +1220,6 @@
   // one hidden switch and flip it through its label on every press. Older iOS (or
   // System Haptics off) simply does nothing. On by default; toggle in Settings.
   const HAPTIC_KEY = 'tvr.haptic';    // '0' = off, anything else = on
-  let hapticLabel = null;
   let lastHaptic = 0;
 
   function hapticOn() { return store.get(HAPTIC_KEY) !== '0'; }
@@ -1230,26 +1229,41 @@
     $('opt-haptic').setAttribute('aria-checked', String(on));
   }
 
+  // Presses only *request* a tick; it plays when the finger lifts. iOS only lets the
+  // switch trick vibrate inside a real user gesture (touchend / click), not on touch-down
+  // or from timers, so auto-repeat ticks aren't possible.
+  let hapticPending = false;
+
   function haptic() {
-    if (!hapticOn()) return;
+    if (hapticOn()) hapticPending = true;
+  }
+
+  function playHaptic() {
+    if (!hapticPending) return;
+    hapticPending = false;
     const now = Date.now();
-    if (now - lastHaptic < 40) return;   // one tick per press, even if two handlers fire
+    if (now - lastHaptic < 40) return;
     lastHaptic = now;
     try {
-      if (!hapticLabel) {
-        hapticLabel = document.createElement('label');
-        hapticLabel.setAttribute('aria-hidden', 'true');
-        hapticLabel.style.display = 'none';
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.setAttribute('switch', '');
-        input.tabIndex = -1;
-        hapticLabel.appendChild(input);
-        document.body.appendChild(hapticLabel);
-      }
-      hapticLabel.click();
+      // Same steps as the ios-haptics library: a hidden label wrapping a switch,
+      // clicked once, then removed.
+      const label = document.createElement('label');
+      label.setAttribute('aria-hidden', 'true');
+      label.style.display = 'none';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.setAttribute('switch', '');
+      label.appendChild(input);
+      document.head.appendChild(label);
+      label.click();
+      document.head.removeChild(label);
     } catch (e) { /* haptics are optional */ }
   }
+
+  // Fire inside the gesture: touchend on iPhone, pointerup/click elsewhere.
+  ['touchend', 'pointerup', 'click'].forEach((type) => {
+    document.addEventListener(type, playHaptic, { capture: true, passive: true });
+  });
 
   // ---- sound ----------------------------------------------------------------
   function soundOn() { return store.get(SOUND_KEY) === '1'; }
