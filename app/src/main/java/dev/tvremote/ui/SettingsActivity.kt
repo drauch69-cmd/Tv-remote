@@ -124,7 +124,7 @@ class SettingsActivity : Activity() {
         lines += mark(MediaListenerService.connected) +
             " Media access (now playing, 10-second seek) · play/pause works either way"
         lines += if (ShizukuHelper.state() == ShizukuHelper.State.READY)
-            "✓ Volume via Shizuku key presses (reaches the TV/soundbar over HDMI-CEC)"
+            "✓ Volume via Shizuku key presses (sent over HDMI-CEC if your TV/soundbar accepts it)"
         else
             "– Volume via Android only (start Shizuku if your TV/soundbar uses HDMI-CEC)"
         lines += when (ShizukuHelper.state()) {

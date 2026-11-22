@@ -21,7 +21,7 @@
   const LOCK_WAIT_MS = 60000;         // pairing off this long after "locked"
   const TAB_KEY = 'tvr.tab';          // 'remote' (default), 'keyboard' or 'apps'
   const FAVS_KEY = 'tvr.favs';        // JSON array of package names, display order
-  const TABS = ['remote', 'keyboard', 'apps'];
+  const TABS = ['remote', 'keyboard', 'apps', 'more'];
   const TEXT_DEBOUNCE_MS = 150;       // quiet time before the phone sends TEXT
   const TAP_SLOP_PX = 8;              // a touch that moves further than this is a scroll
   const FLASH_MS = 180;               // how long a tapped tile stays pressed
@@ -64,6 +64,8 @@
     menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4.5-4.5"/>',
     gear: '<circle cx="12" cy="12" r="8" stroke-dasharray="3 2.4"/><circle cx="12" cy="12" r="3"/>',
+    moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+    power: '<path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
     close: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
     'skip-back': '<path d="M5 5v14"/><path d="M19 5v14l-10-7z"/>',
     rewind: '<path d="M11 6l-7 6 7 6z"/><path d="M21 6l-7 6 7 6z"/>',
@@ -493,6 +495,31 @@
       ? 'Text input needs the Accessibility service or Shizuku'
       : 'Select a search box on the TV first, then type here.';
     document.body.classList.toggle('no-launch', state.caps.apps === false);
+
+    // Shizuku: More-tab keys and the status card.
+    const shz = state.caps.shizuku === true;
+    document.body.classList.toggle('no-shizuku', !shz);
+    $('shz-state').textContent = shz ? 'Ready' : 'Off';
+    $('shz-state').dataset.on = shz ? '1' : '0';
+    $('shz-hint').textContent = shz
+      ? 'Real volume keys, Menu, Settings, Sleep and typing in any app.'
+      : 'Off. After a TV reboot, open Shizuku on the TV and start it again.';
+  }
+
+  // ---- any key code (More tab) ---------------------------------------------
+  function bindKeyBox() {
+    const sendKey = () => {
+      const raw = $('key-code').value || $('key-select').value;
+      const code = parseInt(raw, 10);
+      if (!(code >= 0 && code <= 400)) { toast('Pick a key or type a code'); return; }
+      if (!send({ t: 'cmd', c: 'KEY', code })) toast('Not connected');
+      else playClick();
+    };
+    $('key-send').addEventListener('click', sendKey);
+    $('key-select').addEventListener('change', () => { $('key-code').value = ''; });
+    $('key-code').addEventListener('input', () => {
+      $('key-code').value = $('key-code').value.replace(/\D/g, '').slice(0, 3);
+    });
   }
 
   // ---- tabs -----------------------------------------------------------------
@@ -505,6 +532,7 @@
     $('view-remote').hidden = tab !== 'remote';
     $('view-keyboard').hidden = tab !== 'keyboard';
     $('view-apps').hidden = tab !== 'apps';
+    $('view-more').hidden = tab !== 'more';
     store.set(TAB_KEY, tab);
 
     // Focus after un-hiding, so the field can take it. Leaving the tab hides the phone keyboard.
@@ -880,6 +908,7 @@
     bindApps();
     bindSettings();
     bindUpdates();
+    bindKeyBox();
     bindGestureGuards();
     renderFavs();
     setTab(store.get(TAB_KEY));

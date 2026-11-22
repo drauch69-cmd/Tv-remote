@@ -23,7 +23,7 @@ Phone and TV talk directly over your home Wi-Fi.
 | 1.5 | Self-update from GitHub Releases | Done |
 | 2 | Media controls, now playing, volume, mute | Done |
 | 3 | Text input, app launcher, favorites | Done |
-| 4 | Shizuku backend (done early: volume over HDMI-CEC, real Menu key, typing fallback); phone buttons for Settings, Power, any key code | Partly done |
+| 4 | Shizuku backend: real volume/Menu keys, typing fallback; More tab with Settings, Search, Sleep, Power, Mute and any key code | Done |
 | 5 | Macros, and a guide for iOS Shortcuts | Planned |
 
 ## Getting the APK
@@ -136,6 +136,8 @@ The TV Remote screen shows which one is in use.
   on-screen keyboard (such as YouTube) need Shizuku, which types the letters
   as key presses. Shizuku typing handles plain letters, numbers and symbols, not emoji.
 - **Apps tab:** every launchable app with its TV banner. Tap to open it.
+- **More tab:** Shizuku status, Settings, Search, Menu, Mute, Sleep, Power, and a box to send any
+  Android key code (Guide, Info, colour buttons...). Everything except Search and Mute needs Shizuku.
 - **Favorites:** tap the star on an app to pin it to a row on the main remote
   screen. Favorites are saved on the phone.
 

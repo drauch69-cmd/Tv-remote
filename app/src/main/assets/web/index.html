@@ -32,6 +32,7 @@
     <button class="tab" type="button" role="tab" data-tab="remote" aria-selected="true">Remote</button>
     <button class="tab" type="button" role="tab" data-tab="keyboard" aria-selected="false">Keyboard</button>
     <button class="tab" type="button" role="tab" data-tab="apps" aria-selected="false">Apps</button>
+    <button class="tab" type="button" role="tab" data-tab="more" aria-selected="false">More</button>
   </nav>
 
   <!-- Remote tab: everything the remote had before Phase 3. -->
@@ -151,6 +152,57 @@
     </div>
     <p id="apps-status" class="muted apps-status">Loading…</p>
     <div id="apps-grid" class="apps-grid"></div>
+  </section>
+
+  <!-- More tab: Shizuku status, extra keys, and any key code (Phase 4). -->
+  <section id="view-more" class="view page" hidden>
+    <div class="shz-card">
+      <div class="row"><span>Shizuku</span><span id="shz-state" class="shz-state">–</span></div>
+      <p id="shz-hint" class="muted shz-hint"></p>
+    </div>
+    <div class="more-grid">
+      <button class="btn needs-shizuku" type="button" data-cmd="SETTINGS">
+        <span class="ico" data-icon="gear"></span><span class="lbl">Settings</span>
+      </button>
+      <button class="btn" type="button" data-cmd="SEARCH">
+        <span class="ico" data-icon="search"></span><span class="lbl">Search</span>
+      </button>
+      <button class="btn needs-shizuku" type="button" data-cmd="MENU">
+        <span class="ico" data-icon="menu"></span><span class="lbl">Menu</span>
+      </button>
+      <button class="btn" type="button" data-cmd="MUTE">
+        <span class="ico" data-icon="mute"></span><span class="lbl">Mute</span>
+      </button>
+      <button class="btn needs-shizuku" type="button" data-cmd="SLEEP">
+        <span class="ico" data-icon="moon"></span><span class="lbl">Sleep</span>
+      </button>
+      <button class="btn needs-shizuku" type="button" data-cmd="POWER">
+        <span class="ico" data-icon="power"></span><span class="lbl">Power</span>
+      </button>
+    </div>
+    <div class="key-box needs-shizuku">
+      <p class="muted key-title">Send any key</p>
+      <div class="key-row">
+        <select id="key-select" class="search-input" aria-label="Common keys">
+          <option value="">Common keys…</option>
+          <option value="172">Guide (172)</option>
+          <option value="165">Info (165)</option>
+          <option value="175">Captions (175)</option>
+          <option value="166">Channel up (166)</option>
+          <option value="167">Channel down (167)</option>
+          <option value="178">TV input (178)</option>
+          <option value="183">Red (183)</option>
+          <option value="184">Green (184)</option>
+          <option value="185">Yellow (185)</option>
+          <option value="186">Blue (186)</option>
+          <option value="224">Wake up (224)</option>
+        </select>
+        <input id="key-code" class="search-input key-code" type="text" inputmode="numeric"
+               pattern="[0-9]*" placeholder="Code" aria-label="Key code" maxlength="3">
+        <button id="key-send" class="action primary key-send" type="button">Send</button>
+      </div>
+      <p class="muted key-help">Android key code numbers. Needs Shizuku.</p>
+    </div>
   </section>
 
   <!-- Toast for err messages (top of screen, 2 s). -->

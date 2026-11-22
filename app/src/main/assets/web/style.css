@@ -875,3 +875,28 @@ body.no-launch .tile .art > .art-label { opacity: .35; }
   border-radius: 50%;
   background: var(--accent-b, #9a6cff);
 }
+
+/* ---------- More tab (Phase 4) ---------- */
+.shz-card {
+  padding: 4px 16px 10px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  border: 1px solid var(--surface-border);
+}
+.shz-state[data-on="1"] { color: #3ddc97; }
+.shz-state[data-on="0"] { color: #f5b14c; }
+.shz-hint { font-size: 14px; margin: 0; }
+.more-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+.more-grid .btn { height: min(76px, 11vh); }
+.key-title { margin: 0 0 6px; font-size: 14px; }
+.key-row { display: flex; gap: 8px; }
+.key-row select { flex: 1 1 auto; width: auto; min-width: 0; }
+.key-row .key-code { flex: 0 0 76px; width: 76px; min-width: 0; }
+.key-row .key-send { flex: 0 0 auto; width: auto; padding: 0 20px; }
+.key-help { font-size: 13px; margin: 6px 0 0; }
+body.no-shizuku .needs-shizuku { opacity: .35; pointer-events: none; }
