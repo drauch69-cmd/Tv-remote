@@ -232,19 +232,11 @@ h1, h2 { margin: 0; }
 .section-head .ico svg { width: 20px; height: 20px; color: var(--text); }
 .section-head.pressed { opacity: .7; }
 
-/* One row of pinned apps; four fit across, more scroll sideways. */
+/* One row of up to three pinned apps, filling the width. */
 .favs-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin: 0 -16px;
-  padding: 0 16px 2px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 0 16px;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
 }
 
 .favs-row::-webkit-scrollbar { display: none; }
@@ -252,8 +244,7 @@ h1, h2 { margin: 0; }
 .fav {
   position: relative;
   flex: 0 0 auto;
-  width: calc((100vw - 32px - 20px) / 3);
-  scroll-snap-align: start;
+  min-width: 0;
   cursor: pointer;
 }
 

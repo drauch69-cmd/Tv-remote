@@ -789,7 +789,14 @@
     return state.favs.includes(pkg);
   }
 
+  // The Remote tab shows exactly one row of favorites.
+  const MAX_FAVS = 3;
+
   function toggleFav(pkg) {
+    if (!isFav(pkg) && state.favs.length >= MAX_FAVS) {
+      toast(`Favorites hold ${MAX_FAVS} apps – unstar one first`);
+      return;
+    }
     state.favs = isFav(pkg) ? state.favs.filter((p) => p !== pkg) : state.favs.concat(pkg);
     store.set(FAVS_KEY, JSON.stringify(state.favs));
     document.querySelectorAll('#apps-grid .star').forEach((star) => paintStar(star));
@@ -808,6 +815,7 @@
     const byPkg = new Map((state.apps || []).map((a) => [a.pkg, a]));
     const items = state.favs
       .filter((pkg) => !state.apps || byPkg.has(pkg))     // uninstalled apps drop out
+      .slice(0, MAX_FAVS)
       .map((pkg) => byPkg.get(pkg) || { pkg, label: '', banner: true });
 
     row.textContent = '';
