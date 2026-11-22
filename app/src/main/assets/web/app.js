@@ -3,7 +3,8 @@
  * Plain JS, no build step. Wire format and flow: docs/protocol.md.
  * Sections: constants, icons, storage, status, connection, pairing,
  * buttons, now playing, caps, tabs, keyboard, apps, favourites,
- * settings, sound, init.
+ * macros (list, recording, editor), settings, iOS shortcuts,
+ * app updates, sound, init.
  */
 (() => {
   'use strict';
@@ -25,6 +26,9 @@
   const TEXT_DEBOUNCE_MS = 150;       // quiet time before the phone sends TEXT
   const TAP_SLOP_PX = 8;              // a touch that moves further than this is a scroll
   const FLASH_MS = 180;               // how long a tapped tile stays pressed
+  const MACRO_MAX_STEPS = 50;         // TV limit; also the recording cap
+  const REC_GAP_MS = 700;             // a pause longer than this becomes a WAIT step
+  const WAIT_CAP_MS = 30000;          // TV limit for one WAIT
 
   const $ = (id) => document.getElementById(id);
 
@@ -49,6 +53,9 @@
     apps: null,           // last apps list from the TV (null until loaded)
     favs: [],             // favourite package names, from localStorage
     tapDrag: null,        // where a touch started, to tell a tap from a scroll
+    macros: null,         // last macro list from the TV (null until loaded)
+    rec: null,            // recording in progress: { steps, lastAt }, or null
+    editor: null,         // macro editor: { original, steps, startJson }, or null
   };
 
   // ---- icons (inner markup of 24px viewBox, stroke 2, round caps) -----------
@@ -130,9 +137,12 @@
   }
 
   // Sends one JSON message. Returns false when the socket is not open.
+  // Every cmd goes through here, so a recording running in the page sees all of them.
   function send(msg) {
     if (!socketOpen()) return false;
-    try { state.ws.send(JSON.stringify(msg)); return true; } catch (e) { return false; }
+    try { state.ws.send(JSON.stringify(msg)); } catch (e) { return false; }
+    if (msg.t === 'cmd') recordStep(msg);
+    return true;
   }
 
   function connect() {
@@ -220,6 +230,7 @@
       case 'err':          return toast(msg.msg || `${msg.c || 'Command'} failed`);
       case 'update':       return applyUpdate(msg.update);
       case 'apps':         return onApps(msg);
+      case 'macros':       return onMacros(msg);
       default:             return;
     }
   }
@@ -231,6 +242,7 @@
       setStatus('connected');
       applyCaps(msg.caps);
       ensureApps();
+      requestMacros();
       return;
     }
     // Token missing, wrong or revoked: forget it and ask for a new pairing.
@@ -303,6 +315,7 @@
     setStatus('connected');
     applyCaps(msg.caps);
     ensureApps();
+    requestMacros();
   }
 
   function onPairFailed(msg) {
@@ -690,11 +703,12 @@
   }
 
   // Taps on tiles inside a scrolling container. A touch that moved is a scroll, not a tap.
-  function bindTileTaps(container, onTap) {
+  // `selector` picks the tappable element (tiles and favourites by default).
+  function bindTileTaps(container, onTap, selector = '.tile, .fav') {
     let drag = null;
 
     container.addEventListener('pointerdown', (e) => {
-      const tile = e.target.closest('.tile, .fav');
+      const tile = e.target.closest(selector);
       drag = null;
       if (!tile || e.target.closest('.star')) return;   // the star handles its own taps
       drag = { x: e.clientX, y: e.clientY, moved: false, tile };
@@ -717,7 +731,7 @@
     container.addEventListener('click', (e) => {
       const moved = !!(drag && drag.moved);
       drag = null;
-      const tile = e.target.closest('.tile, .fav');
+      const tile = e.target.closest(selector);
       if (!tile || moved || !container.contains(tile)) return;
       flash(tile);
       onTap(tile);
@@ -802,6 +816,278 @@
     return fav;
   }
 
+  // ---- macros (Phase 5): list on the More tab -------------------------------
+  // The list is stored on the TV. It is asked for after each auth and pair,
+  // and the TV re-sends it whenever it changes.
+  const STEP_LABELS = {
+    DPAD_UP: 'D-pad up', DPAD_DOWN: 'D-pad down', DPAD_LEFT: 'D-pad left',
+    DPAD_RIGHT: 'D-pad right', DPAD_CENTER: 'OK', BACK: 'Back', HOME: 'Home',
+    RECENTS: 'Recents', MENU: 'Menu', SEARCH: 'Search', SETTINGS: 'Settings',
+    SLEEP: 'Sleep', POWER: 'Power', PLAY_PAUSE: 'Play / pause', NEXT: 'Next',
+    PREVIOUS: 'Previous', REWIND: 'Rewind', FAST_FORWARD: 'Fast forward',
+    VOLUME_UP: 'Volume up', VOLUME_DOWN: 'Volume down', MUTE: 'Mute',
+    TEXT_ENTER: 'Press Enter', TEXT_CLEAR: 'Clear text',
+  };
+
+  function requestMacros() {
+    return send({ t: 'macros_get' });
+  }
+
+  function onMacros(msg) {
+    if (!Array.isArray(msg.macros)) return;
+    state.macros = msg.macros
+      .filter((m) => m && typeof m.name === 'string' && m.name)
+      .map((m) => ({
+        name: m.name,
+        steps: Array.isArray(m.steps) ? m.steps.filter((s) => s && typeof s === 'object') : [],
+      }));
+    renderMacros();
+  }
+
+  function stepCountText(n) {
+    return `${n} ${n === 1 ? 'step' : 'steps'}`;
+  }
+
+  function renderMacros() {
+    const list = $('macro-list');
+    const macros = state.macros || [];
+    list.textContent = '';
+    macros.forEach((m) => list.appendChild(makeMacroRow(m)));
+    $('macro-empty').hidden = state.macros === null || macros.length > 0;
+  }
+
+  // One row: a big run target (name and step count), then a small Edit button.
+  function makeMacroRow(macro) {
+    const row = document.createElement('div');
+    row.className = 'macro-row';
+
+    const run = document.createElement('button');
+    run.type = 'button';
+    run.className = 'macro-run';
+    run.dataset.name = macro.name;
+    run.setAttribute('aria-label', `Run ${macro.name}`);
+    const name = document.createElement('span');
+    name.className = 'macro-name';
+    name.textContent = macro.name;
+    const count = document.createElement('span');
+    count.className = 'muted macro-count';
+    count.textContent = stepCountText(macro.steps.length);
+    run.append(name, count);
+
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'action macro-edit';
+    edit.textContent = 'Edit';
+    edit.setAttribute('aria-label', `Edit ${macro.name}`);
+    bindPressFeedback(edit);
+    edit.addEventListener('click', () => openEditor(macro.name, macro.steps, macro.name));
+
+    row.append(run, edit);
+    return row;
+  }
+
+  function runMacro(name) {
+    if (!(state.authed && socketOpen())) { toast('Not connected'); return; }
+    ensureAudio();
+    playClick();
+    if (send({ t: 'cmd', c: 'MACRO', name })) toast(`Running ${name}`);
+  }
+
+  // Friendly text for one step. LAUNCH uses the cached app label when it is known.
+  function stepLabel(step) {
+    switch (step.c) {
+      case 'WAIT': return `Wait ${((Number(step.ms) || 0) / 1000).toFixed(1)} s`;
+      case 'LAUNCH': {
+        const app = (state.apps || []).find((a) => a.pkg === step.pkg);
+        return `Open ${app ? app.label : step.pkg}`;
+      }
+      case 'TEXT': {
+        const text = String(step.text || '');
+        return `Type “${text.length > 30 ? `${text.slice(0, 29)}…` : text}”`;
+      }
+      case 'KEY': return `Key ${step.code}`;
+      default: return STEP_LABELS[step.c] || String(step.c || '?');
+    }
+  }
+
+  // ---- macros (Phase 5): recording -------------------------------------------
+  // Recording copies every cmd that send() actually sends. Auto-repeat presses,
+  // running a macro and text edits are handled in recordStep.
+  function startRecording() {
+    if (state.rec) return;
+    if (!(state.authed && socketOpen())) { toast('Not connected'); return; }
+    state.rec = { steps: [], lastAt: 0 };
+    setTab('remote');
+    renderRecBar();
+  }
+
+  function recordStep(msg) {
+    const rec = state.rec;
+    if (!rec || msg.repeat || msg.c === 'MACRO') return;
+
+    const now = Date.now();
+    const step = {};
+    Object.keys(msg).forEach((k) => { if (k !== 't' && k !== 'repeat') step[k] = msg[k]; });
+
+    // Consecutive text edits collapse into one step that keeps the latest text.
+    const last = rec.steps[rec.steps.length - 1];
+    if (step.c === 'TEXT' && last && last.c === 'TEXT') {
+      last.text = step.text;
+      rec.lastAt = now;
+      return;
+    }
+
+    // A pause longer than REC_GAP_MS becomes a WAIT, rounded to 100 ms.
+    const needWait = rec.steps.length > 0 && now - rec.lastAt > REC_GAP_MS;
+    if (rec.steps.length + (needWait ? 2 : 1) > MACRO_MAX_STEPS) {
+      toast(`Macro is full (${MACRO_MAX_STEPS} steps)`);
+      return;
+    }
+    if (needWait) {
+      const ms = Math.min(WAIT_CAP_MS, Math.round((now - rec.lastAt) / 100) * 100);
+      rec.steps.push({ c: 'WAIT', ms });
+    }
+    rec.steps.push(step);
+    rec.lastAt = now;
+    renderRecBar();
+  }
+
+  function renderRecBar() {
+    const rec = state.rec;
+    $('rec-bar').hidden = !rec;
+    if (rec) $('rec-text').textContent = `Recording · ${stepCountText(rec.steps.length)}`;
+    $('btn-record').disabled = !!rec;
+  }
+
+  function cancelRecording() {
+    if (!state.rec) return;
+    if (state.rec.steps.length && !window.confirm('Discard the recorded steps?')) return;
+    state.rec = null;
+    renderRecBar();
+  }
+
+  // Save ends the recording and opens the editor with the steps and no name yet.
+  function finishRecording() {
+    const rec = state.rec;
+    if (!rec) return;
+    state.rec = null;
+    renderRecBar();
+    openEditor('', rec.steps, null);
+  }
+
+  // ---- macros (Phase 5): editor sheet ----------------------------------------
+  // original: the macro's name when editing, or null for a new macro.
+  function openEditor(name, steps, original) {
+    state.editor = { original, steps: steps.map((s) => Object.assign({}, s)), startJson: '' };
+    $('macro-name').value = name;
+    $('macro-editor-title').textContent = original === null ? 'New macro' : 'Edit macro';
+    $('btn-macro-delete').hidden = original === null;
+    state.editor.startJson = JSON.stringify({ name, steps: state.editor.steps });
+    renderEditor();
+    $('macro-editor').hidden = false;
+  }
+
+  // A new macro counts as changed once it has a name or steps; an edit once it differs from the start.
+  function editorDirty() {
+    const ed = state.editor;
+    if (!ed) return false;
+    if (ed.original === null) return $('macro-name').value !== '' || ed.steps.length > 0;
+    return JSON.stringify({ name: $('macro-name').value, steps: ed.steps }) !== ed.startJson;
+  }
+
+  function closeEditor(force) {
+    if (!state.editor) return;
+    if (!force && editorDirty() && !window.confirm('Discard this macro?')) return;
+    state.editor = null;
+    $('macro-editor').hidden = true;
+  }
+
+  function renderEditor() {
+    const ed = state.editor;
+    if (!ed) return;
+    const list = $('macro-steps');
+    list.textContent = '';
+    ed.steps.forEach((step, i) => {
+      const row = document.createElement('li');
+      row.className = 'step-row';
+      const label = document.createElement('span');
+      label.className = 'step-label';
+      label.textContent = stepLabel(step);
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'step-del';
+      del.textContent = '×';
+      del.setAttribute('aria-label', `Delete step ${i + 1}`);
+      bindPressFeedback(del);
+      del.addEventListener('click', () => {
+        ed.steps.splice(i, 1);
+        renderEditor();
+      });
+      row.append(label, del);
+      list.appendChild(row);
+    });
+    $('macro-steps-empty').hidden = ed.steps.length > 0;
+    updateEditorButtons();
+  }
+
+  function updateEditorButtons() {
+    const ed = state.editor;
+    const named = $('macro-name').value.trim().length > 0;
+    $('btn-macro-save').disabled = !ed || !named || ed.steps.length === 0;
+  }
+
+  function addWaitStep() {
+    const ed = state.editor;
+    if (!ed) return;
+    if (ed.steps.length >= MACRO_MAX_STEPS) { toast(`Macro is full (${MACRO_MAX_STEPS} steps)`); return; }
+    ed.steps.push({ c: 'WAIT', ms: 1000 });
+    renderEditor();
+  }
+
+  function saveMacro() {
+    const ed = state.editor;
+    const name = $('macro-name').value.trim();
+    if (!ed || !name || ed.steps.length === 0) return;
+    const clash = (state.macros || []).some((m) => m.name === name && m.name !== ed.original);
+    if (clash && !window.confirm('Replace the existing macro?')) return;
+
+    const msg = { t: 'macro_save', macro: { name, steps: ed.steps.map((s) => Object.assign({}, s)) } };
+    if (ed.original !== null && name !== ed.original) msg.old = ed.original;
+    if (!send(msg)) { toast('Not connected'); return; }
+    closeEditor(true);
+    toast(`Saved ${name}`);
+  }
+
+  function deleteMacro() {
+    const ed = state.editor;
+    if (!ed || ed.original === null) return;
+    if (!window.confirm(`Delete the macro “${ed.original}”?`)) return;
+    if (!send({ t: 'macro_delete', name: ed.original })) { toast('Not connected'); return; }
+    closeEditor(true);
+  }
+
+  function bindMacros() {
+    bindPressFeedback($('btn-record'));
+    $('btn-record').addEventListener('click', startRecording);
+    bindTileTaps($('macro-list'), (run) => runMacro(run.dataset.name), '.macro-run');
+  }
+
+  function bindRecording() {
+    [$('btn-rec-cancel'), $('btn-rec-save')].forEach(bindPressFeedback);
+    $('btn-rec-cancel').addEventListener('click', cancelRecording);
+    $('btn-rec-save').addEventListener('click', finishRecording);
+  }
+
+  function bindMacroEditor() {
+    const close = () => closeEditor(false);
+    $('btn-macro-close').addEventListener('click', close);
+    $('macro-editor-backdrop').addEventListener('click', close);
+    $('macro-name').addEventListener('input', updateEditorButtons);
+    $('btn-macro-add-wait').addEventListener('click', addWaitStep);
+    $('btn-macro-save').addEventListener('click', saveMacro);
+    $('btn-macro-delete').addEventListener('click', deleteMacro);
+  }
+
   // ---- settings -------------------------------------------------------------
   function setHand(hand) {
     const side = hand === 'left' ? 'left' : 'right';
@@ -812,7 +1098,10 @@
 
   function bindSettings() {
     const close = () => { $('settings').hidden = true; };
-    $('btn-settings').addEventListener('click', () => { $('settings').hidden = false; });
+    $('btn-settings').addEventListener('click', () => {
+      refreshShortcuts();
+      $('settings').hidden = false;
+    });
     $('btn-settings-close').addEventListener('click', close);
     $('settings-backdrop').addEventListener('click', close);
     $('opt-hand').addEventListener('click', () => {
@@ -823,6 +1112,55 @@
       if (!window.confirm('Forget this TV? You will need to pair again.')) return;
       store.del(TOKEN_KEY);
       location.reload();
+    });
+  }
+
+  // ---- iOS shortcuts (Phase 5) ----------------------------------------------
+  // The TV address and token for the Shortcuts app. The token is shown cut short;
+  // the copy buttons copy the whole value.
+  function shortToken(token) {
+    return token.length > 10 ? `${token.slice(0, 6)}…${token.slice(-4)}` : token;
+  }
+
+  function refreshShortcuts() {
+    const token = store.get(TOKEN_KEY) || '';
+    $('sc-host').textContent = location.host;
+    $('sc-token').textContent = token ? shortToken(token) : 'Not paired yet';
+    $('btn-copy-token').disabled = !token;
+    $('btn-copy-example').disabled = !token;
+  }
+
+  // Uses the Clipboard API when there is one. Plain-http pages get a hidden textarea and execCommand.
+  function copyText(text) {
+    const done = () => toast('Copied');
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      if (ok) done(); else toast('Copy failed');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function bindShortcuts() {
+    $('btn-copy-host').addEventListener('click', () => copyText(`http://${location.host}`));
+    $('btn-copy-token').addEventListener('click', () => copyText(store.get(TOKEN_KEY) || ''));
+    $('btn-copy-example').addEventListener('click', () => {
+      copyText(`http://${location.host}/api/cmd?token=${store.get(TOKEN_KEY) || ''}&c=PLAY_PAUSE`);
     });
   }
 
@@ -906,7 +1244,11 @@
     bindTabs();
     bindKeyboard();
     bindApps();
+    bindMacros();
+    bindRecording();
+    bindMacroEditor();
     bindSettings();
+    bindShortcuts();
     bindUpdates();
     bindKeyBox();
     bindGestureGuards();

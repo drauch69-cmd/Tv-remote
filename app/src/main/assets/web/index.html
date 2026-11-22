@@ -18,6 +18,14 @@
 </head>
 <body>
 
+  <!-- Recording bar (Phase 5): covers the top bar while a macro is recorded. -->
+  <div id="rec-bar" class="rec-bar" role="status" hidden>
+    <span class="rec-dot" aria-hidden="true"></span>
+    <span id="rec-text" class="rec-text">Recording</span>
+    <button id="btn-rec-cancel" class="action rec-btn" type="button">Cancel</button>
+    <button id="btn-rec-save" class="action primary rec-btn" type="button">Save</button>
+  </div>
+
   <!-- Top bar: title, connection pill, settings gear. -->
   <header class="topbar">
     <div class="brand">
@@ -203,6 +211,16 @@
       </div>
       <p class="muted key-help">Android key code numbers. Needs Shizuku.</p>
     </div>
+
+    <!-- Macros (Phase 5): saved on the TV. Tap a row to run it, Edit to change it. -->
+    <section class="macro-box">
+      <div class="macro-head">
+        <p class="muted key-title">Macros</p>
+        <button id="btn-record" class="action primary macro-record" type="button">● Record</button>
+      </div>
+      <p id="macro-empty" class="muted" hidden>No macros yet. Tap Record, use the remote, then save.</p>
+      <div id="macro-list" class="macro-list"></div>
+    </section>
   </section>
 
   <!-- Toast for err messages (top of screen, 2 s). -->
@@ -259,7 +277,48 @@
           <button id="btn-update-install" class="action primary" type="button" hidden>Install now</button>
         </div>
       </div>
+
+      <!-- iOS Shortcuts (Phase 5): the same commands over plain HTTP. -->
+      <section class="shortcuts" aria-labelledby="shortcuts-title">
+        <h3 id="shortcuts-title" class="section-title">iOS Shortcuts</h3>
+        <p class="muted">Use these in the Shortcuts app's “Get Contents of URL” action. See docs/shortcuts.md in the repo.</p>
+        <div class="shortcut-row">
+          <div class="shortcut-text">
+            <span class="shortcut-label">TV address</span>
+            <span id="sc-host" class="shortcut-value"></span>
+          </div>
+          <button id="btn-copy-host" class="action copy-btn" type="button">Copy</button>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-text">
+            <span class="shortcut-label">Token</span>
+            <span id="sc-token" class="shortcut-value"></span>
+          </div>
+          <button id="btn-copy-token" class="action copy-btn" type="button">Copy</button>
+        </div>
+        <button id="btn-copy-example" class="action" type="button">Copy example URL</button>
+      </section>
+
       <button id="btn-forget" class="action danger" type="button">Forget this TV</button>
+    </div>
+  </div>
+
+  <!-- Macro editor: opened by Save while recording, or by Edit on a macro row. -->
+  <div id="macro-editor" class="sheet-wrap" hidden>
+    <div id="macro-editor-backdrop" class="backdrop"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="macro-editor-title">
+      <div class="sheet-head">
+        <h2 id="macro-editor-title">New macro</h2>
+        <button id="btn-macro-close" class="icon-btn" type="button" aria-label="Close" data-icon="close"></button>
+      </div>
+      <input id="macro-name" class="search-input macro-name-input" type="text" maxlength="40"
+             placeholder="Macro name" aria-label="Macro name" autocapitalize="sentences"
+             autocorrect="off" spellcheck="false" enterkeyhint="done">
+      <ol id="macro-steps" class="step-list" aria-label="Steps"></ol>
+      <p id="macro-steps-empty" class="muted" hidden>No steps yet. Add a wait, or record again.</p>
+      <button id="btn-macro-add-wait" class="action" type="button">Add wait 1 s</button>
+      <button id="btn-macro-save" class="action primary" type="button" disabled>Save</button>
+      <button id="btn-macro-delete" class="action danger" type="button" hidden>Delete macro</button>
     </div>
   </div>
 
