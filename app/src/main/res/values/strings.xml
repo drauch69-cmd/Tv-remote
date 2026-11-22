@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TV Remote</string>
+    <string name="a11y_label">TV Remote control</string>
+    <string name="a11y_desc">Lets the TV Remote web page on your phone press D-pad, Back, Home and Recents, and type into text fields.</string>
+</resources>

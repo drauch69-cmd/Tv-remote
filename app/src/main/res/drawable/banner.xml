@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 320x180 Leanback banner: navy with a blue-purple remote ring -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp" android:height="180dp"
+    android:viewportWidth="320" android:viewportHeight="180">
+    <path android:fillColor="#0B0F1E" android:pathData="M0,0h320v180h-320z"/>
+    <path android:fillColor="#00000000" android:strokeColor="#6C7BFF" android:strokeWidth="10"
+        android:pathData="M160,40a50,50 0 1,0 0.01,0z"/>
+    <path android:fillColor="#9A6CFF" android:pathData="M160,90m-20,0a20,20 0 1,0 40,0a20,20 0 1,0 -40,0"/>
+</vector>

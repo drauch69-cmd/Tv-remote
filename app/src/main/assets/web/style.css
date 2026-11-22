@@ -1,0 +1,485 @@
+/*
+ * TV Remote - phone page styles.
+ * Dark navy, flat surfaces, no blur, no glow. Portrait, one-handed.
+ */
+
+:root {
+  --bg-top: #0b0f1e;
+  --bg-bottom: #11162b;
+  --surface-top: #222a4f;
+  --surface-bottom: #1a2140;
+  --surface-border: rgba(140, 150, 255, .12);
+  --accent-a: #6c7bff;
+  --accent-b: #9a6cff;
+  --text: #e6e9ff;
+  --muted: #8a90b8;
+  --amber: #f5b942;
+  --green: #3ddc97;
+  --red: #ff6b6b;
+
+  /* D-pad square: 46% of width, capped. Nav cells fill what is left at 375 px. */
+  --dpad: min(46vw, 190px);
+  /* 100vw - module padding (32) - gap between blocks (16) - nav gap (8) = 2 nav cells */
+  --nav: min(calc((100vw - 56px - var(--dpad)) / 2), 96px);
+}
+
+/* The HTML hidden attribute must always win over our display rules. */
+[hidden] { display: none !important; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Full-screen, no scroll, no rubber-band bounce. */
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: var(--text);
+}
+
+html {
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Text fields must stay selectable so the code can be typed and edited. */
+input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent-b);
+  outline-offset: 2px;
+}
+
+h1, h2 { margin: 0; }
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand h1 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.pill[data-state="connecting"],
+.pill[data-state="notpaired"] {
+  color: var(--amber);
+  background: rgba(245, 185, 66, .14);
+}
+
+.pill[data-state="connected"] {
+  color: var(--green);
+  background: rgba(61, 220, 151, .14);
+}
+
+.pill[data-state="offline"] {
+  color: var(--red);
+  background: rgba(255, 107, 107, .14);
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.icon-btn:active { color: var(--text); }
+
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+/* ---------- middle area and banner ---------- */
+
+/* Takes the free space so the module sits in the lower half. */
+#extras {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 16px;
+}
+
+.banner {
+  margin: 0 16px 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #ffd27a;
+  background: rgba(245, 185, 66, .1);
+  border: 1px solid rgba(245, 185, 66, .3);
+}
+
+/* ---------- main module ---------- */
+
+.module {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  transition: opacity .2s ease;
+}
+
+/* Default: D-pad on the right (right-hand). "left" keeps the D-pad on the left. */
+.module[data-hand="right"] {
+  flex-direction: row-reverse;
+}
+
+/* Disconnected: dim the whole module slightly. */
+.module.offline {
+  opacity: .6;
+}
+
+/* No accessibility service on the TV: grey out the controls that need it. */
+.module.a11y-off .needs-a11y {
+  opacity: .35;
+  pointer-events: none;
+}
+
+.dpad {
+  flex: 0 0 auto;
+  width: var(--dpad);
+  height: var(--dpad);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.dpad .d-up    { grid-area: 1 / 2; }
+.dpad .d-left  { grid-area: 2 / 1; }
+.dpad .d-right { grid-area: 2 / 3; }
+.dpad .d-down  { grid-area: 3 / 2; }
+.dpad .d-ok    { grid-area: 2 / 2; }
+
+.nav {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, var(--nav));
+  grid-auto-rows: var(--nav);
+  gap: 8px;
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  border: 1px solid var(--surface-border);
+  transition: transform 60ms ease-out, background-color 60ms linear,
+              border-color 60ms linear, filter 60ms linear;
+}
+
+.btn .ico svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.btn .lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Instant pressed feedback: a little darker, smaller, brighter accent border. */
+.btn.pressed {
+  transform: scale(.95);
+  background: linear-gradient(180deg, #1a2142, #151b36);
+  border-color: rgba(154, 108, 255, .85);
+}
+
+/* OK is the round accent button in the middle of the D-pad. */
+.btn.d-ok {
+  border-radius: 50%;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+}
+
+.btn.d-ok .lbl {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .5px;
+}
+
+.btn.d-ok.pressed {
+  transform: scale(.95);
+  filter: brightness(.8);
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+}
+
+/* Full-width text buttons (pairing, settings). */
+.action {
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  border: 1px solid var(--surface-border);
+}
+
+.action.primary {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+}
+
+.action.danger { color: var(--red); }
+
+.action:active { transform: scale(.98); }
+
+.action:disabled {
+  opacity: .4;
+  transform: none;
+}
+
+/* ---------- toast ---------- */
+
+.toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  z-index: 30;
+  max-width: calc(100vw - 40px);
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  color: var(--text);
+  background: #1f2748;
+  border: 1px solid rgba(255, 107, 107, .35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -12px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---------- pairing overlay ---------- */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px
+           calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: rgba(7, 10, 22, .97);
+}
+
+.panel {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+
+.panel h2 { font-size: 22px; }
+
+.muted {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.small { font-size: 13px; }
+
+.error {
+  min-height: 1.3em;
+  margin: 0;
+  font-size: 14px;
+  color: var(--red);
+}
+
+#pair-step-start,
+#pair-step-code {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.code-input {
+  width: 100%;
+  height: 72px;
+  padding: 0;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: .4em;
+  text-indent: .4em;   /* balance the trailing letter-spacing */
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: #141a33;
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  outline: none;
+}
+
+.code-input:focus { border-color: var(--accent-b); }
+
+.code-input::placeholder {
+  color: #3a4170;
+  letter-spacing: .4em;
+}
+
+/* ---------- settings sheet ---------- */
+
+.sheet-wrap {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+}
+
+.backdrop {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, .5);
+}
+
+.sheet {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: #141a33;
+  border-top: 1px solid var(--surface-border);
+  border-radius: 22px 22px 0 0;
+  animation: rise .18s ease-out;
+}
+
+@keyframes rise {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sheet-head h2 { font-size: 18px; }
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background: #2a3260;
+  transition: background-color .15s linear;
+}
+
+.switch i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e6e9ff;
+  transition: transform .15s ease;
+}
+
+.switch[aria-checked="true"] {
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+}
+
+.switch[aria-checked="true"] i {
+  transform: translateX(20px);
+}
