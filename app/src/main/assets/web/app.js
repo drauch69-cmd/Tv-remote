@@ -64,25 +64,34 @@
     down: '<path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>',
     left: '<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>',
     right: '<path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>',
-    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
-    back: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
-    recents: '<rect x="3" y="7" width="14" height="14" rx="2"/>' +
-      '<path d="M7 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/>',
+    home: '<path fill="currentColor" stroke="none" d="M12 2.8 2.5 11.2a1 1 0 0 0 .7 1.8H5v7.5c0 .6.4 1 1 1h4v-6h4v6h4c.6 0 1-.4 1-1V13h1.8a1 1 0 0 0 .7-1.8z"/>',
+    back: '<path d="M20 12H4.5"/><path d="M10.5 5.5 4 12l6.5 6.5"/>',
+    recents: '<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M7.5 9h9"/><path d="M7.5 13h9"/><path d="M7.5 17h5"/>',
     menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4.5-4.5"/>',
-    gear: '<circle cx="12" cy="12" r="8" stroke-dasharray="3 2.4"/><circle cx="12" cy="12" r="3"/>',
+    gear: '<path fill="currentColor" stroke="none" fill-rule="evenodd" d="M10.3 2h3.4l.5 2.6c.6.2 1.2.5 1.7.9l2.5-.9 1.7 2.9-2 1.8a7 7 0 0 1 0 2l2 1.8-1.7 2.9-2.5-.9c-.5.4-1.1.7-1.7.9l-.5 2.6h-3.4l-.5-2.6a7 7 0 0 1-1.7-.9l-2.5.9-1.7-2.9 2-1.8a7 7 0 0 1 0-2l-2-1.8 1.7-2.9 2.5.9c.5-.4 1.1-.7 1.7-.9zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z"/>',
     moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
     power: '<path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
     close: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
-    'skip-back': '<path d="M5 5v14"/><path d="M19 5v14l-10-7z"/>',
+    'skip-back': '<path d="M6 5v14"/><path fill="currentColor" stroke="none" d="M19.5 5.6v12.8a1 1 0 0 1-1.5.8L8.6 12.8a1 1 0 0 1 0-1.6L18 4.8a1 1 0 0 1 1.5.8z"/>',
     rewind: '<path d="M11 6l-7 6 7 6z"/><path d="M21 6l-7 6 7 6z"/>',
-    play: '<path d="M7 5l12 7-12 7z"/>',
-    pause: '<path d="M8 5v14"/><path d="M16 5v14"/>',
+    play: '<path fill="currentColor" stroke="none" d="M7.5 4.6v14.8a1 1 0 0 0 1.5.9l11.6-7.4a1 1 0 0 0 0-1.7L9 3.7a1 1 0 0 0-1.5.9z"/>',
+    pause: '<rect fill="currentColor" stroke="none" x="6" y="4.5" width="4.2" height="15" rx="1.3"/><rect fill="currentColor" stroke="none" x="13.8" y="4.5" width="4.2" height="15" rx="1.3"/>',
     'fast-forward': '<path d="M13 6l7 6-7 6z"/><path d="M3 6l7 6-7 6z"/>',
-    'skip-forward': '<path d="M19 5v14"/><path d="M5 5v14l10-7z"/>',
-    'vol-down': '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 12h5"/>',
-    mute: '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 9.5l5 5"/><path d="M21 9.5l-5 5"/>',
-    'vol-up': '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 12h5"/><path d="M18.5 9.5v5"/>',
+    'skip-forward': '<path d="M18 5v14"/><path fill="currentColor" stroke="none" d="M4.5 5.6v12.8a1 1 0 0 0 1.5.8l9.4-6.4a1 1 0 0 0 0-1.6L6 4.8a1 1 0 0 0-1.5.8z"/>',
+    'vol-down': '<path fill="currentColor" stroke="none" d="M3 9.5v5c0 .6.4 1 1 1h3l4.4 3.7c.6.5 1.6.1 1.6-.8V5.6c0-.9-1-1.3-1.6-.8L7 8.5H4c-.6 0-1 .4-1 1z"/><path d="M16 12h5.5"/>',
+    mute: '<path fill="currentColor" stroke="none" d="M3 9.5v5c0 .6.4 1 1 1h3l4.4 3.7c.6.5 1.6.1 1.6-.8V5.6c0-.9-1-1.3-1.6-.8L7 8.5H4c-.6 0-1 .4-1 1z"/><path d="M16 9.5l5 5"/><path d="M21 9.5l-5 5"/>',
+    'vol-up': '<path fill="currentColor" stroke="none" d="M3 9.5v5c0 .6.4 1 1 1h3l4.4 3.7c.6.5 1.6.1 1.6-.8V5.6c0-.9-1-1.3-1.6-.8L7 8.5H4c-.6 0-1 .4-1 1z"/><path d="M15.5 12h6"/><path d="M18.5 9v6"/>',
+    replay10: '<path d="M4.6 13.5A7.6 7.6 0 1 0 7 6.6"/><path fill="currentColor" stroke="none" d="M8.8 3.2v6.2L4 6.3z"/>' +
+      '<text fill="currentColor" stroke="none" x="12.3" y="15.6" font-size="7.6" font-weight="700" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">10</text>',
+    forward10: '<path d="M19.4 13.5A7.6 7.6 0 1 1 17 6.6"/><path fill="currentColor" stroke="none" d="M15.2 3.2v6.2L20 6.3z"/>' +
+      '<text fill="currentColor" stroke="none" x="11.7" y="15.6" font-size="7.6" font-weight="700" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">10</text>',
+    'tab-remote': '<rect x="7" y="2.5" width="10" height="19" rx="4"/><circle fill="currentColor" stroke="none" cx="12" cy="7.5" r="1.6"/><circle fill="currentColor" stroke="none" cx="12" cy="12.5" r="1.1"/><circle fill="currentColor" stroke="none" cx="12" cy="16.5" r="1.1"/>',
+    'tab-keyboard': '<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 9.5h.01M9.3 9.5h.01M12.6 9.5h.01M15.9 9.5h.01M18 9.5h.01M6 12.5h.01M18 12.5h.01M8 15h8"/><path d="M9.3 12.5h5.4"/>',
+    'tab-apps': '<rect fill="currentColor" stroke="none" x="3.5" y="3.5" width="7.3" height="7.3" rx="2"/><rect fill="currentColor" stroke="none" x="13.2" y="3.5" width="7.3" height="7.3" rx="2"/><rect fill="currentColor" stroke="none" x="3.5" y="13.2" width="7.3" height="7.3" rx="2"/><rect fill="currentColor" stroke="none" x="13.2" y="13.2" width="7.3" height="7.3" rx="2"/>',
+    'tab-more': '<circle fill="currentColor" stroke="none" cx="5" cy="12" r="2"/><circle fill="currentColor" stroke="none" cx="12" cy="12" r="2"/><circle fill="currentColor" stroke="none" cx="19" cy="12" r="2"/>',
+    chevron: '<path d="M9 5l7 7-7 7"/>',
+    warn: '<path fill="currentColor" stroke="none" d="M10.3 3.6 1.9 18.2A2 2 0 0 0 3.6 21h16.8a2 2 0 0 0 1.7-2.8L13.7 3.6a2 2 0 0 0-3.4 0z"/><path stroke="#1a1408" d="M12 9v4.5"/><path stroke="#1a1408" d="M12 17.2h.01"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
     star: '<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
   };
@@ -123,12 +132,12 @@
     $('media').classList.toggle('offline', kind !== 'connected');
   }
 
-  function toast(text) {
+  function toast(text, ms) {
     const el = $('toast');
     el.textContent = text;
     el.classList.add('show');
     clearTimeout(state.toastTimer);
-    state.toastTimer = setTimeout(() => el.classList.remove('show'), TOAST_MS);
+    state.toastTimer = setTimeout(() => el.classList.remove('show'), ms || TOAST_MS);
   }
 
   // ---- connection -----------------------------------------------------------
@@ -470,15 +479,8 @@
   // ---- now playing ----------------------------------------------------------
   // The TV sends null when nothing plays. Play/pause icon follows `playing`.
   function applyNow(now) {
+    // The card was dropped in the redesign; only the play/pause icon follows playback.
     const info = now && typeof now === 'object' ? now : null;
-    $('now').hidden = !info;
-    if (info) {
-      $('now-app').textContent = info.app || '';
-      $('now-app').hidden = !info.app;
-      $('now-title').textContent = info.title || '';
-      $('now-sub').textContent = info.subtitle || '';
-      $('now-sub').hidden = !info.subtitle;
-    }
 
     const playing = !!info && info.playing === true;
     $('play-icon').innerHTML = iconSvg(playing ? 'pause' : 'play');
@@ -763,6 +765,13 @@
     });
     bindPressFeedback($('fav-hint'));
     $('fav-hint').addEventListener('click', () => setTab('apps'));
+    bindPressFeedback($('favs-head'));
+    bindPressFeedback($('a11y-banner'));
+    $('favs-head').addEventListener('click', () => setTab('apps'));
+    // Warning bar: say how to fix it (the TV app has a one-press fix with Shizuku).
+    $('a11y-banner').addEventListener('click', () => {
+      toast('On the TV: open TV Remote → “Set up permissions with Shizuku”, or turn it on in Accessibility settings', 5000);
+    });
   }
 
   // ---- favourites -----------------------------------------------------------

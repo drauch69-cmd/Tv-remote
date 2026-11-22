@@ -1,26 +1,30 @@
 /*
- * TV Remote - phone page styles.
- * Dark navy, flat surfaces, no blur, no glow. Portrait, one-handed.
+ * TV Remote - phone page styles (v2 design: deep indigo panels, purple accent).
+ * No blur, no heavy glow. Portrait, one-handed, fits 375x667 without scrolling.
  */
 
 :root {
-  --bg-top: #0b0f1e;
-  --bg-bottom: #11162b;
-  --surface-top: #222a4f;
-  --surface-bottom: #1a2140;
-  --surface-border: rgba(140, 150, 255, .12);
-  --accent-a: #6c7bff;
-  --accent-b: #9a6cff;
-  --text: #e6e9ff;
-  --muted: #8a90b8;
+  --bg-top: #0e1030;
+  --bg-bottom: #08091a;
+  --panel: #1a1d44;
+  --surface-top: #2a2e66;
+  --surface-bottom: #1f2250;
+  --surface-border: rgba(150, 140, 255, .16);
+  --accent-a: #6b5cff;
+  --accent-b: #8b5cf6;
+  --accent: #6d55ff;
+  --text: #f3f4ff;
+  --muted: #9ea3d0;
   --amber: #f5b942;
-  --green: #3ddc97;
-  --red: #ff6b6b;
+  --green: #22c55e;
+  --red: #ef4444;
+  --radius: 22px;
 
-  /* D-pad square: 46% of width, capped. Nav cells fill what is left at 375 px. */
-  --dpad: min(46vw, 190px);
-  /* 100vw - module padding (32) - gap between blocks (16) - nav gap (8) = 2 nav cells */
-  --nav: min(calc((100vw - 56px - var(--dpad)) / 2), 96px);
+  /* D-pad diameter and the 2x2 grid cells next to it (16 px page margins, 14 px gap). */
+  --dpad: min(49vw, 33vh, 240px);
+  --nav-gap: 10px;
+  --nav-w: min(calc((100vw - 32px - 14px - var(--dpad) - var(--nav-gap)) / 2), 104px);
+  --nav-h: calc((var(--dpad) - var(--nav-gap)) / 2);
 }
 
 /* The HTML hidden attribute must always win over our display rules. */
@@ -44,9 +48,7 @@ html, body {
   color: var(--text);
 }
 
-html {
-  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
-}
+html { background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom)); }
 
 body {
   display: flex;
@@ -56,12 +58,8 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Text fields must stay selectable so the code can be typed and edited. */
-input,
-textarea {
-  -webkit-user-select: text;
-  user-select: text;
-}
+/* Text fields must stay selectable so text can be typed and edited. */
+input, textarea { -webkit-user-select: text; user-select: text; }
 
 button {
   font: inherit;
@@ -75,13 +73,11 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--accent-b);
-  outline-offset: 2px;
-}
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent-b); outline-offset: 2px; }
 
 h1, h2 { margin: 0; }
+
+.ico svg { display: block; }
 
 /* ---------- top bar ---------- */
 
@@ -89,323 +85,115 @@ h1, h2 { margin: 0; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 18px 8px;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
-.brand h1 {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: .2px;
-}
+.brand h1 { font-size: clamp(26px, 8vw, 34px); font-weight: 800; letter-spacing: -.5px; }
 
+/* Status pill with a coloured dot. */
 .pill {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   white-space: nowrap;
 }
 
-.pill[data-state="connecting"],
-.pill[data-state="notpaired"] {
+.pill::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pill[data-state="connecting"], .pill[data-state="notpaired"] {
   color: var(--amber);
   background: rgba(245, 185, 66, .14);
 }
 
-.pill[data-state="connected"] {
-  color: var(--green);
-  background: rgba(61, 220, 151, .14);
-}
+.pill[data-state="connected"] { color: #e8ffe9; background: #0f5a2c; }
+.pill[data-state="connected"]::before { background: var(--green); }
 
-.pill[data-state="offline"] {
-  color: var(--red);
-  background: rgba(255, 107, 107, .14);
-}
+.pill[data-state="offline"] { color: #ffd6d6; background: rgba(239, 68, 68, .22); }
+.pill[data-state="offline"]::before { background: var(--red); }
 
 .icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-}
-
-.icon-btn:active { color: var(--text); }
-
-.icon-btn svg {
-  width: 22px;
-  height: 22px;
-  display: block;
-}
-
-/* ---------- middle area and banner ---------- */
-
-/* Takes the free space so the module sits in the lower half. */
-#extras {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 8px 16px;
-}
-
-.banner {
-  margin: 0 16px 10px;
-  padding: 10px 12px;
+  width: 44px;
+  height: 44px;
   border-radius: 14px;
-  font-size: 13px;
-  line-height: 1.35;
-  color: #ffd27a;
-  background: rgba(245, 185, 66, .1);
-  border: 1px solid rgba(245, 185, 66, .3);
-}
-
-/* ---------- now playing, playback strip, volume row ---------- */
-
-/* Card at the top: app name, title, subtitle. Single lines, cut with an ellipsis. */
-.now {
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
-  border: 1px solid var(--surface-border);
-}
-
-.now-app,
-.now-title,
-.now-sub {
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.now-app { font-size: 13px; color: var(--muted); }
-.now-title { margin-top: 2px; font-size: 16px; font-weight: 600; }
-.now-sub { margin-top: 2px; font-size: 14px; color: var(--muted); }
-
-/* Sits in the lower part of the screen, right above the main module. */
-.media {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0 16px;
-  transition: opacity .2s ease;
-}
-
-.media.offline { opacity: .6; }
-
-/* Volume unavailable on the TV: same look as the a11y-off controls. */
-.media.vol-off .needs-volume {
-  opacity: .35;
-  pointer-events: none;
-}
-
-.media-row {
-  display: grid;
-  gap: 8px;
-}
-
-.strip-playback { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.strip-volume { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-/* Shorter on small screens (iPhone SE: 667 px tall). */
-.media-btn {
-  height: min(52px, 7vh);
-  border-radius: 16px;
-}
-
-.media-btn .ico svg {
-  width: 24px;
-  height: 24px;
-}
-
-/* Play/pause: accent gradient, like OK. */
-.btn.accent {
-  color: #fff;
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-}
-
-.btn.accent.pressed {
-  transform: scale(.95);
-  filter: brightness(.8);
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-}
-
-/* ---------- main module ---------- */
-
-.module {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
-  transition: opacity .2s ease;
-}
-
-/* Default: D-pad on the right (right-hand). "left" keeps the D-pad on the left. */
-.module[data-hand="right"] {
-  flex-direction: row-reverse;
-}
-
-/* Disconnected: dim the whole module slightly. */
-.module.offline {
-  opacity: .6;
-}
-
-/* No accessibility service on the TV: grey out the controls that need it. */
-.module.a11y-off .needs-a11y {
-  opacity: .35;
-  pointer-events: none;
-}
-
-.dpad {
-  flex: 0 0 auto;
-  width: var(--dpad);
-  height: var(--dpad);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.dpad .d-up    { grid-area: 1 / 2; }
-.dpad .d-left  { grid-area: 2 / 1; }
-.dpad .d-right { grid-area: 2 / 3; }
-.dpad .d-down  { grid-area: 3 / 2; }
-.dpad .d-ok    { grid-area: 2 / 2; }
-
-.nav {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, var(--nav));
-  grid-auto-rows: var(--nav);
-  gap: 8px;
-}
-
-/* ---------- buttons ---------- */
-
-.btn {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
-  border: 1px solid var(--surface-border);
-  transition: transform 60ms ease-out, background-color 60ms linear,
-              border-color 60ms linear, filter 60ms linear;
-}
-
-.btn .ico svg {
-  width: 26px;
-  height: 26px;
-  display: block;
-}
-
-.btn .lbl {
-  font-size: 12px;
-  font-weight: 600;
   color: var(--muted);
 }
 
-/* Instant pressed feedback: a little darker, smaller, brighter accent border. */
-.btn.pressed {
-  transform: scale(.95);
-  background: linear-gradient(180deg, #1a2142, #151b36);
-  border-color: rgba(154, 108, 255, .85);
-}
+.icon-btn svg { width: 24px; height: 24px; }
+.icon-btn:active, .icon-btn.pressed { color: var(--text); }
 
-/* OK is the round accent button in the middle of the D-pad. */
-.btn.d-ok {
-  border-radius: 50%;
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-}
+/* Settings gear: bigger and white, like the mockup. */
+#btn-settings { color: var(--text); }
+#btn-settings svg { width: 30px; height: 30px; }
 
-.btn.d-ok .lbl {
-  font-size: 17px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: .5px;
-}
+/* ---------- tabs ---------- */
 
-.btn.d-ok.pressed {
-  transform: scale(.95);
-  filter: brightness(.8);
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-}
-
-/* Full-width text buttons (pairing, settings). */
-.action {
-  width: 100%;
-  height: 52px;
-  border-radius: 16px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text);
-  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
-  border: 1px solid var(--surface-border);
-}
-
-.action.primary {
-  color: #fff;
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-}
-
-.action.danger { color: var(--red); }
-
-.action:active,
-.action.pressed { transform: scale(.98); }
-
-.action:disabled {
-  opacity: .4;
-  transform: none;
-}
-
-/* ---------- tabs, views ---------- */
-
-/* Thin segmented control on its own row under the top bar. */
+/* Pill-shaped bar: icon over label; the selected tab is a purple pill. */
 .tabs {
   flex: 0 0 auto;
   display: flex;
-  gap: 4px;
-  margin: 0 16px 8px;
-  padding: 3px;
-  border-radius: 14px;
-  background: #141a33;
+  margin: 2px 16px 10px;
+  padding: 4px;
+  border-radius: 26px;
+  background: var(--panel);
   border: 1px solid var(--surface-border);
 }
 
 .tab {
+  position: relative;
   flex: 1 1 0;
-  height: 34px;
-  border-radius: 11px;
-  font-size: 14px;
+  height: min(54px, 8vh);
+  min-height: 46px;
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
   transition: transform 60ms ease-out, background-color 60ms linear, color 60ms linear;
 }
 
+.tab .ico svg { width: 22px; height: 22px; }
+
+/* Thin separators between unselected tabs. */
+.tab + .tab::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  border-left: 1px solid rgba(150, 140, 255, .18);
+}
+
+.tab[aria-selected="true"]::before,
+.tab[aria-selected="true"] + .tab::before { display: none; }
+
 .tab[aria-selected="true"] {
   color: #fff;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  background: linear-gradient(180deg, #6f5cff, #5a45e8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 0 0 1px rgba(140, 120, 255, .55);
 }
 
 .tab.pressed { transform: scale(.96); }
 
-/* One view at a time: the remote, or a full-screen tab under the bar. */
+/* One view at a time under the bar. */
 .view {
   display: flex;
   flex-direction: column;
@@ -418,21 +206,34 @@ h1, h2 { margin: 0; }
   padding: 4px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
 
-.icon-btn.pressed { color: var(--text); }
+/* ---------- Remote tab: favorites ---------- */
 
-/* ---------- favourites row (Remote tab) ---------- */
+.favs-section { flex: 0 0 auto; padding: 0 16px; }
 
-/* One line of pinned apps. Bleeds to the screen edges and scrolls sideways. */
+/* "Favorites ›" heading; tapping it opens the Apps tab. */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 2px 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.section-head .ico svg { width: 20px; height: 20px; color: var(--text); }
+.section-head.pressed { opacity: .7; }
+
+/* One row of pinned apps; four fit across, more scroll sideways. */
 .favs-row {
-  flex: 0 0 auto;
   display: flex;
   gap: 10px;
-  margin: 10px -16px 0;
+  margin: 0 -16px;
   padding: 0 16px 2px;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  scroll-padding: 0 16px;     /* snap stops line up with the page margin */
+  scroll-padding: 0 16px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -440,44 +241,273 @@ h1, h2 { margin: 0; }
 
 .favs-row::-webkit-scrollbar { display: none; }
 
-/* 64 px tall at 16:9. */
 .fav {
+  position: relative;
   flex: 0 0 auto;
-  width: 114px;
+  width: calc((100vw - 32px - 30px) / 4);
   scroll-snap-align: start;
   cursor: pointer;
 }
 
-.fav.pressed .art {
-  transform: scale(.95);
-  border-color: rgba(154, 108, 255, .85);
-}
-
 .fav .art {
-  aspect-ratio: auto;
-  height: 64px;
+  aspect-ratio: 6 / 5;
+  height: auto;
+  max-height: 11vh;
+  border-radius: 14px;
 }
 
-.fav .art.is-icon img {
-  width: 40px;
-  height: 40px;
+.fav .art img { object-fit: cover; }
+.fav .art.is-icon img { width: 44%; height: auto; }
+.fav .art-label { font-size: 12px; }
+
+/* White star badge: these are the starred apps. */
+.fav::after {
+  content: "★";
+  position: absolute;
+  top: 4px;
+  right: 7px;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+  pointer-events: none;
 }
 
-.fav .art-label { font-size: 13px; }
+.fav.pressed .art { transform: scale(.95); border-color: rgba(154, 108, 255, .85); }
 
-/* Shown when there are no favourites yet: a small chip that opens the Apps tab. */
 .fav-hint {
   display: inline-block;
-  margin-top: 10px;
-  padding: 8px 14px;
+  padding: 9px 14px;
   border-radius: 999px;
   font-size: 13px;
   color: var(--muted);
-  background: #141a33;
+  background: var(--panel);
   border: 1px solid var(--surface-border);
 }
 
 .fav-hint.pressed { transform: scale(.96); }
+
+/* ---------- Remote tab: controls at the bottom ---------- */
+
+.controls {
+  margin-top: auto;               /* everything below hugs the bottom (thumb reach) */
+  display: flex;
+  flex-direction: column;
+  gap: min(12px, 1.6vh);
+  padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+}
+
+.media {
+  display: flex;
+  flex-direction: column;
+  gap: min(12px, 1.6vh);
+  transition: opacity .2s ease;
+}
+
+.media.offline { opacity: .6; }
+
+.media.vol-off .needs-volume { opacity: .35; pointer-events: none; }
+
+/* A rounded panel holding a row of flat buttons. */
+.panel-row {
+  display: grid;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #23275a, #1a1d47);
+  border: 1px solid var(--surface-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+.strip-playback { grid-template-columns: repeat(5, minmax(0, 1fr)); height: min(76px, 10.5vh); }
+.strip-volume { grid-template-columns: repeat(3, minmax(0, 1fr)); height: min(56px, 8vh); }
+
+/* Flat buttons inside a panel: no box of their own, a soft round highlight when pressed. */
+.btn.flat {
+  height: 100%;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  color: var(--text);
+}
+
+.btn.flat .ico svg { width: 30px; height: 30px; }
+.strip-volume .btn.flat .ico svg { width: 28px; height: 28px; }
+.btn.flat.pressed { background: rgba(140, 120, 255, .22); transform: scale(.94); }
+
+/* Play/pause: a purple circle raised out of the panel. */
+.btn.play {
+  justify-self: center;
+  width: min(84px, 11.5vh);
+  height: min(84px, 11.5vh);
+  border-radius: 50%;
+  border: 0;
+  color: #fff;
+  background: radial-gradient(circle at 50% 30%, #7d6bff, #5b3ff0 70%);
+  box-shadow: 0 4px 14px rgba(91, 63, 240, .45), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+
+.btn.play .ico svg { width: 34px; height: 34px; }
+.btn.play.pressed { transform: scale(.93); filter: brightness(.85); }
+
+/* ---------- Remote tab: D-pad + 2x2 grid ---------- */
+
+.module {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  transition: opacity .2s ease;
+}
+
+/* Default (right hand): D-pad on the right. Left-hand layout puts it on the left. */
+.module[data-hand="right"] { flex-direction: row-reverse; }
+
+.module.offline { opacity: .6; }
+
+.module.a11y-off .needs-a11y { opacity: .35; pointer-events: none; }
+
+/* The D-pad is one SVG: a dark disc, four wedge buttons, and OK in the middle. */
+.dpad {
+  flex: 0 0 auto;
+  width: var(--dpad);
+  height: var(--dpad);
+  overflow: visible;
+}
+
+.dpad-base { fill: #121433; }
+
+.dpad .seg {
+  fill: #2a2d6a;
+  stroke: #2a2d6a;
+  stroke-width: 6;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: fill 60ms linear, stroke 60ms linear, transform 60ms ease-out;
+}
+
+.dpad .seg.pressed { fill: #5b48e6; stroke: #5b48e6; transform: scale(.97); }
+
+.seg-arrow { fill: #fff; pointer-events: none; }
+
+.ok-ring { fill: #0c0e27; pointer-events: none; }
+
+.dpad .seg.ok { fill: #1d2052; stroke: #353a86; stroke-width: 2; }
+.dpad .seg.ok.pressed { fill: #5b48e6; stroke: #7d6bff; }
+
+.ok-lbl {
+  fill: #fff;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  pointer-events: none;
+}
+
+.nav {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, var(--nav-w));
+  grid-auto-rows: var(--nav-h);
+  gap: var(--nav-gap);
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius);
+  color: var(--text);
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  border: 1px solid var(--surface-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  transition: transform 60ms ease-out, background-color 60ms linear,
+              border-color 60ms linear, filter 60ms linear;
+}
+
+.btn .ico svg { width: 30px; height: 30px; }
+
+.btn .lbl { font-size: 15px; font-weight: 600; color: var(--text); }
+
+/* Instant pressed feedback: purple tint, slightly smaller, brighter border. */
+.btn.pressed {
+  transform: scale(.95);
+  background: linear-gradient(180deg, #3b3490, #2c2878);
+  border-color: rgba(154, 108, 255, .85);
+}
+
+/* The 2x2 cells get a little less padding on small phones. */
+.nav .btn { gap: min(6px, .8vh); }
+.nav .btn .lbl { font-size: min(15px, 4vw); }
+
+/* Full-width text buttons (pairing, settings, keyboard...). */
+.action {
+  width: 100%;
+  height: 52px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  border: 1px solid var(--surface-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+  transition: transform 60ms ease-out, filter 60ms linear;
+}
+
+.action.primary {
+  color: #fff;
+  border-color: rgba(140, 120, 255, .5);
+  background: linear-gradient(180deg, #6f5cff, #5a45e8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+
+.action.danger { color: #ff8a8a; }
+
+.action:active, .action.pressed { transform: scale(.98); filter: brightness(.9); }
+
+.action:disabled { opacity: .4; transform: none; filter: none; }
+
+/* ---------- accessibility warning bar ---------- */
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  text-align: left;
+  font-size: min(15px, 3.7vw);
+  font-weight: 600;
+  color: var(--amber);
+  background: linear-gradient(180deg, #2a2412, #1f1a0e);
+  border: 1px solid rgba(245, 185, 66, .35);
+}
+
+.banner .ico svg { width: 22px; height: 22px; }
+.banner-ico { color: var(--amber); }
+.banner-text { flex: 1 1 auto; min-width: 0; }
+.banner.pressed { filter: brightness(1.2); }
+
+/* Update waiting: red dot on the gear. */
+#btn-settings { position: relative; }
+#btn-settings.has-update::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 2px var(--bg-top);
+}
 
 /* ---------- app art, tiles, star ---------- */
 
@@ -871,16 +901,6 @@ body.no-launch .tile .art > .art-label { opacity: .35; }
 .update-status { font-size: 14px; min-height: 18px; margin: 2px 0 10px; }
 .update-actions { display: flex; gap: 10px; }
 .update-actions .action { flex: 1; }
-/* Small dot on the gear when an update is waiting. */
-#btn-settings { position: relative; }
-#btn-settings.has-update::after {
-  content: "";
-  position: absolute;
-  top: 6px; right: 6px;
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  background: var(--accent-b, #9a6cff);
-}
 
 /* ---------- More tab (Phase 4) ---------- */
 .shz-card {
@@ -1150,3 +1170,59 @@ body.no-shizuku .needs-shizuku { opacity: .35; pointer-events: none; }
   border-radius: 13px;
   font-size: 15px;
 }
+
+/* Taller phones (iPhone 12 and up): bigger D-pad and panels so the controls fill the space. */
+@media (min-height: 780px) {
+  :root { --dpad: min(56vw, 250px); --nav-gap: 10px; }
+  .nav .btn .lbl { font-size: 14px; }
+  .fav .art { aspect-ratio: 1 / 1; max-height: 13vh; }
+  .strip-playback { height: 84px; }
+  .strip-volume { height: 64px; }
+  .btn.play { width: 92px; height: 92px; }
+  .controls { gap: 16px; }
+  .media { gap: 16px; }
+  .favs-section { padding-top: 4px; }
+}
+
+/* ---------- v2 polish for the other pages ---------- */
+
+/* Section titles ("Send any key", "Macros", "iOS Shortcuts") read like "Favorites". */
+.key-title, .section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Cards and inputs share the panel look. */
+.shz-card, .update-box, .shortcut-row, .macro-row, .kb-input, .search-input, .code-input {
+  border-radius: 18px;
+}
+
+.search-input, .kb-input, .code-input {
+  background: var(--panel);
+  border: 1px solid var(--surface-border);
+  color: var(--text);
+}
+
+.search-input:focus, .kb-input:focus, .code-input:focus {
+  outline: none;
+  border-color: rgba(140, 120, 255, .7);
+  box-shadow: 0 0 0 3px rgba(109, 85, 255, .25);
+}
+
+/* Bottom sheets and the pairing panel: same indigo as the tab bar, rounded top. */
+.sheet, .overlay .panel {
+  background: linear-gradient(180deg, #1c1f4a, #121433);
+  border: 1px solid var(--surface-border);
+}
+
+.sheet { border-radius: 28px 28px 0 0; }
+.overlay .panel { border-radius: 28px; }
+
+/* Switches: purple when on. */
+.switch[aria-checked="true"] { background: var(--accent); }
+
+/* App tiles: a bit rounder, purple ring when pressed. */
+.tile .art { border-radius: 16px; }
+.tile.pressed .art { border-color: rgba(154, 108, 255, .85); }
+.star.on { color: #fff; }

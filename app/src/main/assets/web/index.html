@@ -35,106 +35,125 @@
     <button id="btn-settings" class="icon-btn" type="button" aria-label="Settings" data-icon="gear"></button>
   </header>
 
-  <!-- Thin segmented control under the bar: Remote, Keyboard, Apps. -->
+  <!-- Tabs: icon over label. -->
   <nav class="tabs" role="tablist" aria-label="Views">
-    <button class="tab" type="button" role="tab" data-tab="remote" aria-selected="true">Remote</button>
-    <button class="tab" type="button" role="tab" data-tab="keyboard" aria-selected="false">Keyboard</button>
-    <button class="tab" type="button" role="tab" data-tab="apps" aria-selected="false">Apps</button>
-    <button class="tab" type="button" role="tab" data-tab="more" aria-selected="false">More</button>
+    <button class="tab" type="button" role="tab" data-tab="remote" aria-selected="true">
+      <span class="ico" data-icon="tab-remote"></span><span class="tab-lbl">Remote</span>
+    </button>
+    <button class="tab" type="button" role="tab" data-tab="keyboard" aria-selected="false">
+      <span class="ico" data-icon="tab-keyboard"></span><span class="tab-lbl">Keyboard</span>
+    </button>
+    <button class="tab" type="button" role="tab" data-tab="apps" aria-selected="false">
+      <span class="ico" data-icon="tab-apps"></span><span class="tab-lbl">Apps</span>
+    </button>
+    <button class="tab" type="button" role="tab" data-tab="more" aria-selected="false">
+      <span class="ico" data-icon="tab-more"></span><span class="tab-lbl">More</span>
+    </button>
   </nav>
 
-  <!-- Remote tab: everything the remote had before Phase 3. -->
+  <!-- Remote tab. -->
   <div id="view-remote" class="view">
 
-    <!-- Now-playing card under the bar. Hidden when the TV reports nothing playing. -->
-    <section id="extras">
-      <div id="now" class="now" hidden>
-        <p id="now-app" class="now-app"></p>
-        <p id="now-title" class="now-title"></p>
-        <p id="now-sub" class="now-sub"></p>
-      </div>
-      <!-- Pinned favourite apps. Either the row or the hint shows, never both. -->
+    <!-- Favorites: heading (opens Apps) and a sideways-scrolling row of pinned apps. -->
+    <section id="extras" class="favs-section">
+      <button id="favs-head" class="section-head" type="button">
+        <span>Favorites</span><span class="ico" data-icon="chevron"></span>
+      </button>
+      <!-- Either the row or the hint shows, never both. -->
       <div id="favs" class="favs-row" hidden></div>
       <button id="fav-hint" class="fav-hint" type="button" hidden>★ Star apps in the Apps tab to pin them here</button>
     </section>
 
-    <!-- Shown when the TV's Accessibility service is off. -->
-    <div id="a11y-banner" class="banner" hidden>Turn on the Accessibility service on the TV (TV Remote app → settings)</div>
+    <!-- Everything below sits at the bottom of the screen, in thumb reach. -->
+    <div class="controls">
 
-    <!-- Playback strip and volume row, directly above the main module. -->
-    <section id="media" class="media">
-      <div class="media-row strip-playback" role="group" aria-label="Playback">
-        <button class="btn media-btn" type="button" data-cmd="PREVIOUS" aria-label="Previous">
-          <span class="ico" data-icon="skip-back"></span>
-        </button>
-        <button class="btn media-btn" type="button" data-cmd="REWIND" aria-label="Rewind">
-          <span class="ico" data-icon="rewind"></span>
-        </button>
-        <button id="btn-play" class="btn media-btn accent" type="button" data-cmd="PLAY_PAUSE" aria-label="Play">
-          <span id="play-icon" class="ico" data-icon="play"></span>
-        </button>
-        <button class="btn media-btn" type="button" data-cmd="FAST_FORWARD" aria-label="Fast forward">
-          <span class="ico" data-icon="fast-forward"></span>
-        </button>
-        <button class="btn media-btn" type="button" data-cmd="NEXT" aria-label="Next">
-          <span class="ico" data-icon="skip-forward"></span>
-        </button>
-      </div>
-      <div class="media-row strip-volume" role="group" aria-label="Volume">
-        <button class="btn media-btn needs-volume" type="button" data-cmd="VOLUME_DOWN" data-repeat="1" aria-label="Volume down">
-          <span class="ico" data-icon="vol-down"></span>
-        </button>
-        <button class="btn media-btn needs-volume" type="button" data-cmd="MUTE" aria-label="Mute">
-          <span class="ico" data-icon="mute"></span>
-        </button>
-        <button class="btn media-btn needs-volume" type="button" data-cmd="VOLUME_UP" data-repeat="1" aria-label="Volume up">
-          <span class="ico" data-icon="vol-up"></span>
-        </button>
-      </div>
-    </section>
+      <!-- Playback and volume panels. -->
+      <section id="media" class="media">
+        <div class="panel-row strip-playback" role="group" aria-label="Playback">
+          <button class="btn flat" type="button" data-cmd="PREVIOUS" aria-label="Previous">
+            <span class="ico" data-icon="skip-back"></span>
+          </button>
+          <button class="btn flat" type="button" data-cmd="REWIND" aria-label="Back 10 seconds">
+            <span class="ico" data-icon="replay10"></span>
+          </button>
+          <button id="btn-play" class="btn play" type="button" data-cmd="PLAY_PAUSE" aria-label="Play">
+            <span id="play-icon" class="ico" data-icon="play"></span>
+          </button>
+          <button class="btn flat" type="button" data-cmd="FAST_FORWARD" aria-label="Forward 10 seconds">
+            <span class="ico" data-icon="forward10"></span>
+          </button>
+          <button class="btn flat" type="button" data-cmd="NEXT" aria-label="Next">
+            <span class="ico" data-icon="skip-forward"></span>
+          </button>
+        </div>
+        <div class="panel-row strip-volume" role="group" aria-label="Volume">
+          <button class="btn flat needs-volume" type="button" data-cmd="VOLUME_DOWN" data-repeat="1" aria-label="Volume down">
+            <span class="ico" data-icon="vol-down"></span>
+          </button>
+          <button class="btn flat needs-volume" type="button" data-cmd="MUTE" aria-label="Mute">
+            <span class="ico" data-icon="mute"></span>
+          </button>
+          <button class="btn flat needs-volume" type="button" data-cmd="VOLUME_UP" data-repeat="1" aria-label="Volume up">
+            <span class="ico" data-icon="vol-up"></span>
+          </button>
+        </div>
+      </section>
 
-    <!-- Main module: D-pad and 2×2 nav grid in one row, anchored to the lower half. -->
-    <main id="module" class="module" data-hand="right">
+      <!-- Main module: round D-pad beside the 2×2 grid. The hand setting swaps the sides. -->
+      <main id="module" class="module" data-hand="right">
 
-      <div class="dpad needs-a11y" role="group" aria-label="D-pad">
-        <button class="btn arrow d-up" type="button" data-cmd="DPAD_UP" data-repeat="1" aria-label="Up">
-          <span class="ico" data-icon="up"></span>
-        </button>
-        <button class="btn arrow d-left" type="button" data-cmd="DPAD_LEFT" data-repeat="1" aria-label="Left">
-          <span class="ico" data-icon="left"></span>
-        </button>
-        <button class="btn d-ok" type="button" data-cmd="DPAD_CENTER" aria-label="OK">
-          <span class="lbl">OK</span>
-        </button>
-        <button class="btn arrow d-right" type="button" data-cmd="DPAD_RIGHT" data-repeat="1" aria-label="Right">
-          <span class="ico" data-icon="right"></span>
-        </button>
-        <button class="btn arrow d-down" type="button" data-cmd="DPAD_DOWN" data-repeat="1" aria-label="Down">
-          <span class="ico" data-icon="down"></span>
-        </button>
-      </div>
+        <!-- D-pad: four wedges and OK, drawn as one SVG. Wedges are .btn[data-cmd] like any button. -->
+        <svg class="dpad needs-a11y" viewBox="0 0 200 200" role="group" aria-label="D-pad">
+          <circle class="dpad-base" cx="100" cy="100" r="99"/>
+        <g transform="rotate(0 100 100)">
+          <path class="btn seg" data-cmd="DPAD_UP" data-repeat="1" role="button" aria-label="Up" d="M37.5 29.8 A94 94 0 0 1 162.5 29.8 L131.3 61.0 A50 50 0 0 0 68.7 61.0 Z"/>
+          <path class="seg-arrow" d="M100 26 L111 40 H89 Z"/>
+        </g>
+        <g transform="rotate(90 100 100)">
+          <path class="btn seg" data-cmd="DPAD_RIGHT" data-repeat="1" role="button" aria-label="Right" d="M37.5 29.8 A94 94 0 0 1 162.5 29.8 L131.3 61.0 A50 50 0 0 0 68.7 61.0 Z"/>
+          <path class="seg-arrow" d="M100 26 L111 40 H89 Z"/>
+        </g>
+        <g transform="rotate(180 100 100)">
+          <path class="btn seg" data-cmd="DPAD_DOWN" data-repeat="1" role="button" aria-label="Down" d="M37.5 29.8 A94 94 0 0 1 162.5 29.8 L131.3 61.0 A50 50 0 0 0 68.7 61.0 Z"/>
+          <path class="seg-arrow" d="M100 26 L111 40 H89 Z"/>
+        </g>
+        <g transform="rotate(270 100 100)">
+          <path class="btn seg" data-cmd="DPAD_LEFT" data-repeat="1" role="button" aria-label="Left" d="M37.5 29.8 A94 94 0 0 1 162.5 29.8 L131.3 61.0 A50 50 0 0 0 68.7 61.0 Z"/>
+          <path class="seg-arrow" d="M100 26 L111 40 H89 Z"/>
+        </g>
+          <circle class="ok-ring" cx="100" cy="100" r="46"/>
+          <circle class="btn seg ok" data-cmd="DPAD_CENTER" role="button" aria-label="OK" cx="100" cy="100" r="40"/>
+          <text class="ok-lbl" x="100" y="101" text-anchor="middle" dominant-baseline="central">OK</text>
+        </svg>
 
-      <div class="nav">
-        <button class="btn needs-a11y" type="button" data-cmd="HOME">
-          <span class="ico" data-icon="home"></span>
-          <span class="lbl">Home</span>
-        </button>
-        <button class="btn needs-a11y" type="button" data-cmd="BACK">
-          <span class="ico" data-icon="back"></span>
-          <span class="lbl">Back</span>
-        </button>
-        <button class="btn needs-a11y" type="button" data-cmd="RECENTS">
-          <span class="ico" data-icon="recents"></span>
-          <span class="lbl">Recents</span>
-        </button>
-        <!-- Label and icon follow caps.menu: "Menu" when "menu", otherwise "Search". Both send MENU. -->
-        <button id="btn-menu" class="btn" type="button" data-cmd="MENU" aria-label="Menu or search">
-          <span id="menu-icon" class="ico" data-icon="search"></span>
-          <span id="menu-label" class="lbl">Search</span>
-        </button>
-      </div>
+        <div class="nav">
+          <button class="btn needs-a11y" type="button" data-cmd="HOME">
+            <span class="ico" data-icon="home"></span>
+            <span class="lbl">Home</span>
+          </button>
+          <button class="btn needs-a11y" type="button" data-cmd="BACK">
+            <span class="ico" data-icon="back"></span>
+            <span class="lbl">Back</span>
+          </button>
+          <button class="btn needs-a11y" type="button" data-cmd="RECENTS">
+            <span class="ico" data-icon="recents"></span>
+            <span class="lbl">Recents</span>
+          </button>
+          <!-- Label and icon follow caps.menu: "Menu" when "menu", otherwise "Search". Both send MENU. -->
+          <button id="btn-menu" class="btn" type="button" data-cmd="MENU" aria-label="Menu or search">
+            <span id="menu-icon" class="ico" data-icon="search"></span>
+            <span id="menu-label" class="lbl">Search</span>
+          </button>
+        </div>
+      </main>
 
-    </main>
+      <!-- Shown when the TV's Accessibility service is off. Tap for how to fix it. -->
+      <button id="a11y-banner" class="banner" type="button" hidden>
+        <span class="ico banner-ico" data-icon="warn"></span>
+        <span class="banner-text">Turn on the Accessibility service on the TV</span>
+        <span class="ico" data-icon="chevron"></span>
+      </button>
+    </div>
   </div>
 
   <!-- Keyboard tab: what is typed here goes into the focused field on the TV. -->
