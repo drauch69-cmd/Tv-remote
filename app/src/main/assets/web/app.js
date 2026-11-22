@@ -2,7 +2,8 @@
  * TV Remote - phone page logic.
  * Plain JS, no build step. Wire format and flow: docs/protocol.md.
  * Sections: constants, icons, storage, status, connection, pairing,
- * buttons, now playing, caps, settings, sound, init.
+ * buttons, now playing, caps, tabs, keyboard, apps, favourites,
+ * settings, sound, init.
  */
 (() => {
   'use strict';
@@ -18,6 +19,12 @@
   const REPEAT_EVERY_MS = 110;
   const TOAST_MS = 2000;
   const LOCK_WAIT_MS = 60000;         // pairing off this long after "locked"
+  const TAB_KEY = 'tvr.tab';          // 'remote' (default), 'keyboard' or 'apps'
+  const FAVS_KEY = 'tvr.favs';        // JSON array of package names, display order
+  const TABS = ['remote', 'keyboard', 'apps'];
+  const TEXT_DEBOUNCE_MS = 150;       // quiet time before the phone sends TEXT
+  const TAP_SLOP_PX = 8;              // a touch that moves further than this is a scroll
+  const FLASH_MS = 180;               // how long a tapped tile stays pressed
 
   const $ = (id) => document.getElementById(id);
 
@@ -37,6 +44,11 @@
     lockTimer: null,
     toastTimer: null,
     audio: null,          // WebAudio context, created on first touch
+    textTimer: null,      // debounce for the TEXT command
+    caps: {},             // last caps seen, merged over messages
+    apps: null,           // last apps list from the TV (null until loaded)
+    favs: [],             // favourite package names, from localStorage
+    tapDrag: null,        // where a touch started, to tell a tap from a scroll
   };
 
   // ---- icons (inner markup of 24px viewBox, stroke 2, round caps) -----------
@@ -62,6 +74,8 @@
     'vol-down': '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 12h5"/>',
     mute: '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 9.5l5 5"/><path d="M21 9.5l-5 5"/>',
     'vol-up': '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 12h5"/><path d="M18.5 9.5v5"/>',
+    refresh: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
+    star: '<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
   };
 
   function iconSvg(name) {
@@ -203,6 +217,7 @@
       case 'pong':         state.lastPong = Date.now(); return;
       case 'err':          return toast(msg.msg || `${msg.c || 'Command'} failed`);
       case 'update':       return applyUpdate(msg.update);
+      case 'apps':         return onApps(msg);
       default:             return;
     }
   }
@@ -213,6 +228,7 @@
       hidePairing();
       setStatus('connected');
       applyCaps(msg.caps);
+      ensureApps();
       return;
     }
     // Token missing, wrong or revoked: forget it and ask for a new pairing.
@@ -284,6 +300,7 @@
     hidePairing();
     setStatus('connected');
     applyCaps(msg.caps);
+    ensureApps();
   }
 
   function onPairFailed(msg) {
@@ -428,7 +445,7 @@
     let lastTouchEnd = 0;
     document.addEventListener('touchend', (e) => {
       const now = Date.now();
-      const inField = e.target.closest && e.target.closest('input');
+      const inField = e.target.closest && e.target.closest('input, textarea');
       if (now - lastTouchEnd < 300 && !inField) e.preventDefault();
       lastTouchEnd = now;
     }, { passive: false });
@@ -457,6 +474,7 @@
   // Runs on every auth, paired and caps message.
   function applyCaps(caps) {
     if (!caps || typeof caps !== 'object') return;
+    state.caps = Object.assign({}, state.caps, caps);
     const noAccessibility = caps.accessibility === false;
     $('module').classList.toggle('a11y-off', noAccessibility);
     $('a11y-banner').hidden = !noAccessibility;
@@ -468,6 +486,292 @@
     const useMenu = caps.menu === 'menu';
     $('menu-label').textContent = useMenu ? 'Menu' : 'Search';
     $('menu-icon').innerHTML = iconSvg(useMenu ? 'menu' : 'search');
+
+    // Keyboard greys out without text input; launching greys out without apps.
+    $('kb-body').classList.toggle('needs-text', state.caps.text === false);
+    $('kb-hint').textContent = state.caps.text === false
+      ? 'Text input needs the Accessibility service or Shizuku'
+      : 'Select a search box on the TV first, then type here.';
+    document.body.classList.toggle('no-launch', state.caps.apps === false);
+  }
+
+  // ---- tabs -----------------------------------------------------------------
+  // Remote is the default. Keyboard and Apps replace the remote area; the top bar stays.
+  function setTab(name) {
+    const tab = TABS.includes(name) ? name : 'remote';
+    document.querySelectorAll('.tab').forEach((btn) => {
+      btn.setAttribute('aria-selected', String(btn.dataset.tab === tab));
+    });
+    $('view-remote').hidden = tab !== 'remote';
+    $('view-keyboard').hidden = tab !== 'keyboard';
+    $('view-apps').hidden = tab !== 'apps';
+    store.set(TAB_KEY, tab);
+
+    // Focus after un-hiding, so the field can take it. Leaving the tab hides the phone keyboard.
+    if (tab === 'keyboard') $('kb-text').focus();
+    else $('kb-text').blur();
+    if (tab === 'apps') requestApps();
+  }
+
+  // Instant pressed feedback, the same as the remote buttons.
+  function bindPressFeedback(el) {
+    el.addEventListener('pointerdown', () => el.classList.add('pressed'));
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => {
+      el.addEventListener(type, () => el.classList.remove('pressed'));
+    });
+  }
+
+  function bindTabs() {
+    document.querySelectorAll('.tab').forEach((btn) => {
+      bindPressFeedback(btn);
+      btn.addEventListener('click', () => setTab(btn.dataset.tab));
+    });
+  }
+
+  // ---- keyboard -------------------------------------------------------------
+  // The whole box value goes to the TV's focused field, debounced while typing.
+  function sendText() {
+    clearTimeout(state.textTimer);
+    state.textTimer = null;
+    send({ t: 'cmd', c: 'TEXT', text: $('kb-text').value });
+  }
+
+  function queueText() {
+    clearTimeout(state.textTimer);
+    state.textTimer = setTimeout(sendText, TEXT_DEBOUNCE_MS);
+  }
+
+  // Enter sends any pending text first, so the TV has the full value before the key.
+  function pressEnter() {
+    if (state.textTimer) sendText();
+    sendCmd('TEXT_ENTER');
+  }
+
+  function clearText() {
+    clearTimeout(state.textTimer);
+    state.textTimer = null;
+    $('kb-text').value = '';
+    sendCmd('TEXT_CLEAR');
+  }
+
+  function bindKeyboard() {
+    const box = $('kb-text');
+    box.addEventListener('input', queueText);
+    box.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();                 // no newline in the box
+      pressEnter();
+    });
+    bindPressFeedback($('kb-clear'));
+    bindPressFeedback($('kb-enter'));
+    $('kb-clear').addEventListener('click', clearText);
+    $('kb-enter').addEventListener('click', pressEnter);
+  }
+
+  // ---- apps -----------------------------------------------------------------
+  // The TV sends the list sorted by label. The last list is kept for the grid and the favourites row.
+  function requestApps() {
+    return send({ t: 'apps_get' });
+  }
+
+  // Asked once after auth, so the favourites row can show names and banners.
+  function ensureApps() {
+    if (state.apps === null) requestApps();
+  }
+
+  function onApps(msg) {
+    if (!Array.isArray(msg.apps)) return;
+    state.apps = msg.apps
+      .filter((a) => a && typeof a.pkg === 'string' && a.pkg)
+      .map((a) => ({ pkg: a.pkg, label: String(a.label || a.pkg), banner: a.banner === true }));
+    renderApps();
+    renderFavs();
+  }
+
+  // Same image URL as the TV's own endpoint: the token goes in the query string.
+  function iconUrl(pkg) {
+    const token = store.get(TOKEN_KEY) || '';
+    return `/icon?pkg=${encodeURIComponent(pkg)}&token=${encodeURIComponent(token)}`;
+  }
+
+  // Art box for one app. A failed image leaves the label in its place.
+  function makeArt(app) {
+    const art = document.createElement('div');
+    art.className = app.banner ? 'art' : 'art is-icon';
+
+    const img = document.createElement('img');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.addEventListener('error', () => {
+      img.remove();
+      art.classList.add('no-img');
+    });
+    img.src = iconUrl(app.pkg);
+
+    const label = document.createElement('span');
+    label.className = 'art-label';
+    label.textContent = app.label;
+
+    art.append(img, label);
+    return art;
+  }
+
+  // Grid tile: 16:9 art with the star in its corner, caption underneath.
+  function makeTile(app) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.pkg = app.pkg;
+    tile.setAttribute('aria-label', `Launch ${app.label}`);
+
+    const art = makeArt(app);
+    const star = document.createElement('button');
+    star.type = 'button';
+    star.className = 'star';
+    star.dataset.pkg = app.pkg;
+    star.setAttribute('aria-label', 'Favourite');
+    star.innerHTML = iconSvg('star');
+    star.addEventListener('click', (e) => {
+      e.stopPropagation();                // the tile itself must not launch
+      toggleFav(app.pkg);
+    });
+    paintStar(star);
+    art.appendChild(star);
+
+    const cap = document.createElement('span');
+    cap.className = 'tile-cap';
+    cap.textContent = app.label;
+
+    tile.append(art, cap);
+    return tile;
+  }
+
+  function renderApps() {
+    const grid = $('apps-grid');
+    const list = state.apps;
+    const q = $('apps-filter').value.trim().toLowerCase();
+    const shown = list ? list.filter((a) => a.label.toLowerCase().includes(q)) : [];
+
+    grid.textContent = '';
+    shown.forEach((app) => grid.appendChild(makeTile(app)));
+
+    const status = $('apps-status');
+    status.hidden = shown.length > 0;
+    status.textContent = !list ? 'Loading…'
+      : list.length === 0 ? 'No apps on the TV'
+      : 'No apps match the filter';
+  }
+
+  // Taps on tiles inside a scrolling container. A touch that moved is a scroll, not a tap.
+  function bindTileTaps(container, onTap) {
+    let drag = null;
+
+    container.addEventListener('pointerdown', (e) => {
+      const tile = e.target.closest('.tile, .fav');
+      drag = null;
+      if (!tile || e.target.closest('.star')) return;   // the star handles its own taps
+      drag = { x: e.clientX, y: e.clientY, moved: false, tile };
+      tile.classList.add('pressed');
+    });
+
+    container.addEventListener('pointermove', (e) => {
+      if (!drag || drag.moved) return;
+      if (Math.abs(e.clientX - drag.x) > TAP_SLOP_PX || Math.abs(e.clientY - drag.y) > TAP_SLOP_PX) {
+        drag.moved = true;
+      }
+    });
+
+    ['pointerup', 'pointercancel'].forEach((type) => {
+      container.addEventListener(type, () => {
+        if (drag) drag.tile.classList.remove('pressed');
+      });
+    });
+
+    container.addEventListener('click', (e) => {
+      const moved = !!(drag && drag.moved);
+      drag = null;
+      const tile = e.target.closest('.tile, .fav');
+      if (!tile || moved || !container.contains(tile)) return;
+      flash(tile);
+      onTap(tile);
+    });
+  }
+
+  // Keeps the pressed look for a moment after a tap, so the tap reads as sent.
+  function flash(el) {
+    el.classList.add('pressed');
+    setTimeout(() => el.classList.remove('pressed'), FLASH_MS);
+  }
+
+  // The TV does the launch; the phone only sends it.
+  function launchApp(pkg) {
+    if (!(state.authed && socketOpen())) { toast('Not connected'); return; }
+    if (state.caps.apps === false) { toast('Launching is not available on the TV'); return; }
+    ensureAudio();
+    playClick();
+    send({ t: 'cmd', c: 'LAUNCH', pkg });
+  }
+
+  function bindApps() {
+    bindTileTaps($('apps-grid'), (tile) => launchApp(tile.dataset.pkg));
+    bindTileTaps($('favs'), (tile) => launchApp(tile.dataset.pkg));
+    $('apps-filter').addEventListener('input', renderApps);
+    bindPressFeedback($('btn-apps-refresh'));
+    $('btn-apps-refresh').addEventListener('click', () => {
+      if (!requestApps()) toast('Not connected');
+    });
+    bindPressFeedback($('fav-hint'));
+    $('fav-hint').addEventListener('click', () => setTab('apps'));
+  }
+
+  // ---- favourites -----------------------------------------------------------
+  // Stored on the phone only. Unreadable storage counts as no favourites.
+  function loadFavs() {
+    try {
+      const list = JSON.parse(store.get(FAVS_KEY) || '[]');
+      return Array.isArray(list) ? list.filter((p) => typeof p === 'string') : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function isFav(pkg) {
+    return state.favs.includes(pkg);
+  }
+
+  function toggleFav(pkg) {
+    state.favs = isFav(pkg) ? state.favs.filter((p) => p !== pkg) : state.favs.concat(pkg);
+    store.set(FAVS_KEY, JSON.stringify(state.favs));
+    document.querySelectorAll('#apps-grid .star').forEach((star) => paintStar(star));
+    renderFavs();
+  }
+
+  function paintStar(star) {
+    const on = isFav(star.dataset.pkg);
+    star.classList.toggle('on', on);
+    star.setAttribute('aria-pressed', String(on));
+  }
+
+  // Shows the pinned apps, or the hint when there are none. Names come from the cached list.
+  function renderFavs() {
+    const row = $('favs');
+    const byPkg = new Map((state.apps || []).map((a) => [a.pkg, a]));
+    const items = state.favs
+      .filter((pkg) => !state.apps || byPkg.has(pkg))     // uninstalled apps drop out
+      .map((pkg) => byPkg.get(pkg) || { pkg, label: '', banner: true });
+
+    row.textContent = '';
+    items.forEach((app) => row.appendChild(makeFav(app)));
+    row.hidden = items.length === 0;
+    $('fav-hint').hidden = items.length > 0;
+  }
+
+  function makeFav(app) {
+    const fav = document.createElement('div');
+    fav.className = 'fav';
+    fav.dataset.pkg = app.pkg;
+    fav.setAttribute('aria-label', `Launch ${app.label || 'app'}`);
+    fav.appendChild(makeArt(app));
+    return fav;
   }
 
   // ---- settings -------------------------------------------------------------
@@ -568,11 +872,17 @@
     applyIcons();
     setHand(store.get(HAND_KEY));
     setSound(soundOn());
+    state.favs = loadFavs();
     bindRemoteButtons();
     bindPairing();
+    bindTabs();
+    bindKeyboard();
+    bindApps();
     bindSettings();
     bindUpdates();
     bindGestureGuards();
+    renderFavs();
+    setTab(store.get(TAB_KEY));
     connect();
   }
 
