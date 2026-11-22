@@ -123,9 +123,12 @@ class SettingsActivity : Activity() {
             " Accessibility service (D-pad, Back, Home, Recents)"
         lines += mark(MediaListenerService.connected) +
             " Media access (now playing, 10-second seek) · play/pause works either way"
-        lines += "✓ Volume"
+        lines += if (ShizukuHelper.state() == ShizukuHelper.State.READY)
+            "✓ Volume via Shizuku key presses (reaches the TV/soundbar over HDMI-CEC)"
+        else
+            "– Volume via Android only (start Shizuku if your TV/soundbar uses HDMI-CEC)"
         lines += when (ShizukuHelper.state()) {
-            ShizukuHelper.State.READY -> "✓ Shizuku ready"
+            ShizukuHelper.State.READY -> "✓ Shizuku ready (Menu, volume keys, typing in any app)"
             ShizukuHelper.State.NO_PERMISSION -> "✕ Shizuku running, TV Remote not allowed yet"
             ShizukuHelper.State.NOT_RUNNING -> "✕ Shizuku not running (optional)"
         }

@@ -5,6 +5,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import dev.tvremote.data.Prefs
 import dev.tvremote.exec.AccessibilityExecutor
+import dev.tvremote.exec.AppLauncher
+import dev.tvremote.exec.ShizukuFallbackExecutor
+import dev.tvremote.exec.ShizukuKeyExecutor
 import dev.tvremote.exec.CommandRouter
 import dev.tvremote.exec.MediaKeyExecutor
 import dev.tvremote.exec.MediaSessionExecutor
@@ -33,6 +36,8 @@ class App : Application() {
         private set
     lateinit var media: MediaWatcher
         private set
+    lateinit var launcher: AppLauncher
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -40,20 +45,28 @@ class App : Application() {
         prefs = Prefs(this)
         pairing = PairingManager(prefs)
         media = MediaWatcher(this)
+        launcher = AppLauncher(this)
         // Order matters: the router asks each backend in turn and uses the
         // first one that is available and supports the command.
         router = CommandRouter(
             listOf(
-                AccessibilityExecutor(this),
-                MediaSessionExecutor(media), // exact seeking when we can see the session
-                MediaKeyExecutor(this),      // otherwise plain media keys
-                VolumeExecutor(this),
+                ShizukuKeyExecutor(),          // real key presses: volume (HDMI-CEC), Menu, Settings...
+                AccessibilityExecutor(this, launcher), // D-pad, Back, Home, text fields, launching
+                MediaSessionExecutor(media),   // exact seeking when we can see the session
+                MediaKeyExecutor(this),        // otherwise plain media keys
+                VolumeExecutor(this),          // Android volume when Shizuku is off
+                ShizukuFallbackExecutor(launcher), // typing into app keyboards, launching
             )
         )
         updater = UpdateManager(this)
         // When Shizuku becomes available, use it to switch our Accessibility
         // service back on if it's off (e.g. after an update or a fresh install).
-        Shizuku.addBinderReceivedListenerSticky { ensurePermissionsViaShizuku() }
+        Shizuku.addBinderReceivedListenerSticky {
+            ensurePermissionsViaShizuku()
+            router.notifyCapsChanged()
+        }
+        Shizuku.addBinderDeadListener { router.notifyCapsChanged() }
+        Shizuku.addRequestPermissionResultListener { _, _ -> router.notifyCapsChanged() }
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Remote server", NotificationManager.IMPORTANCE_MIN)
         )

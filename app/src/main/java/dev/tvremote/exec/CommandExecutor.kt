@@ -6,6 +6,12 @@ import org.json.JSONObject
 data class Command(val name: String, val args: JSONObject = JSONObject())
 
 /**
+ * Thrown by an executor to give the phone a specific, human-readable reason
+ * ("No text field is selected on the TV"). The router still tries the next backend.
+ */
+class ExecError(message: String) : Exception(message)
+
+/**
  * A way of controlling the TV (Accessibility, MediaSession, Shizuku, ...).
  * The [CommandRouter] picks the first executor that is available and supports a command.
  */
@@ -19,6 +25,6 @@ interface CommandExecutor {
     /** True if this backend knows how to run [name]. */
     fun supports(name: String): Boolean
 
-    /** Runs the command. Returns false if it failed. */
+    /** Runs the command. Returns false (or throws [ExecError]) if it couldn't. */
     fun execute(cmd: Command): Boolean
 }

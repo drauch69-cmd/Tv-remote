@@ -87,3 +87,30 @@ Now playing — the TV sends this after auth and whenever it changes:
 
 `subtitle` and `app` may be empty strings. `now` is null when nothing is playing
 or when `media` is false.
+
+## Phase 3: keyboard, apps, favorites
+
+### Text input
+- `{"t":"cmd","c":"TEXT","text":"hello wor"}` — makes the focused text field on
+  the TV contain exactly this text (the phone sends the whole box contents on
+  every change, debounced ~150 ms, so typing on the phone mirrors live).
+- `{"t":"cmd","c":"TEXT_ENTER"}` — presses Enter/Search/Go in the field.
+- `{"t":"cmd","c":"TEXT_CLEAR"}` — empties the field.
+- If no text field is focused on the TV the reply is
+  `{"t":"err","c":"TEXT","msg":"No text field is selected on the TV"}`.
+
+### Apps
+- Phone → `{"t":"apps_get"}`; TV → `{"t":"apps","apps":[{"pkg":"com.netflix.ninja","label":"Netflix","banner":true}, ...]}`
+  sorted by label.
+- Images: `GET /icon?pkg=<pkg>&token=<token>` → PNG. When `banner` is true it's a
+  wide 16:9 TV banner (320×180); otherwise a square icon (192×192). Requests
+  without a valid token get 403.
+- Launch: `{"t":"cmd","c":"LAUNCH","pkg":"com.netflix.ninja"}`.
+
+### Favorites
+Stored only on the phone: localStorage `tvr.favs` = JSON array of package names,
+in display order.
+
+### New caps fields
+`"text"`: text input works; `"apps"`: launching works; `"shizuku"`: Shizuku
+backend ready (then `"menu"` is `"menu"`).

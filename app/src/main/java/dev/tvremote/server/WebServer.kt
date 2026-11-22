@@ -65,6 +65,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
     // ---------------------------------------------------------------- HTTP
 
     override fun serveHttp(session: IHTTPSession): Response {
+        if (session.uri == "/icon") return serveIcon(session)
         var path = session.uri.trimStart('/')
         if (path.isEmpty()) path = "index.html"
         if (path.contains("..")) return notFound()
@@ -76,6 +77,18 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
         } catch (e: IOException) {
             notFound()
         }
+    }
+
+    /** App banner/icon PNG for the launcher. Needs the phone's token (img tags can't send headers). */
+    private fun serveIcon(session: IHTTPSession): Response {
+        val token = session.parameters["token"]?.firstOrNull()
+        if (!app.pairing.isValidToken(token)) {
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.FORBIDDEN, NanoHTTPD.MIME_PLAINTEXT, "Not paired")
+        }
+        val pkg = session.parameters["pkg"]?.firstOrNull() ?: return notFound()
+        val png = app.launcher.image(pkg) ?: return notFound()
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "image/png", png.inputStream(), png.size.toLong())
+            .apply { addHeader("Cache-Control", "private, max-age=86400") }
     }
 
     private fun notFound() =
@@ -141,6 +154,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
                 }
                 "pair" -> handlePair(msg.optString("code"))
                 "cmd" -> handleCommand(msg)
+                "apps_get" -> if (authed) sendApps()
                 "update_check" -> if (authed) app.updater.checkNow()
                 "update_install" -> if (authed) app.updater.installNow()
             }
@@ -177,6 +191,14 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
             if (error != null && !msg.optBoolean("repeat")) {
                 sendJson(JSONObject().put("t", "err").put("c", name).put("msg", error))
             }
+        }
+
+        private fun sendApps() {
+            val list = org.json.JSONArray()
+            for (a in app.launcher.list()) {
+                list.put(JSONObject().put("pkg", a.pkg).put("label", a.label).put("banner", a.banner))
+            }
+            sendJson(JSONObject().put("t", "apps").put("apps", list))
         }
 
         private fun pairFailed(reason: String) =

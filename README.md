@@ -22,8 +22,8 @@ Phone and TV talk directly over your home Wi-Fi.
 | 1 | Server, pairing, connection status, D-pad, OK, Back, Home, Recents, Menu (opens Search), main phone page | Done |
 | 1.5 | Self-update from GitHub Releases | Done |
 | 2 | Media controls, now playing, volume, mute | Done |
-| 3 | Text input, app launcher, favorites | Planned |
-| 4 | Shizuku backend, plus keys that need Shizuku (Menu, Settings, Power, Search, Mute, any key code) | Planned |
+| 3 | Text input, app launcher, favorites | Done |
+| 4 | Shizuku backend (done early: volume over HDMI-CEC, real Menu key, typing fallback); phone buttons for Settings, Power, any key code | Partly done |
 | 5 | Macros, and a guide for iOS Shortcuts | Planned |
 
 ## Getting the APK
@@ -119,6 +119,25 @@ adb shell cmd notification allow_listener dev.tvremote/dev.tvremote.services.Med
 ```
 
 The app only uses this to see the media session; it doesn't read your notifications.
+
+## Volume and HDMI-CEC
+
+If your TV or soundbar controls volume over HDMI-CEC, Android's own volume
+control on the box can't reach it. With **Shizuku running**, TV Remote sends
+real volume key presses instead, exactly like the physical remote, and those
+are forwarded over CEC. Without Shizuku it falls back to Android volume.
+The TV Remote screen shows which one is in use.
+
+## Keyboard, apps and favorites
+
+- **Keyboard tab:** select a search box on the TV, then type on the phone. The
+  TV field mirrors the phone box live; Enter on the phone presses Search/Go.
+  Normal text fields use the Accessibility service. Apps with their own
+  on-screen keyboard (such as YouTube) need Shizuku, which types the letters
+  as key presses. Shizuku typing handles plain letters, numbers and symbols, not emoji.
+- **Apps tab:** every launchable app with its TV banner. Tap to open it.
+- **Favorites:** tap the star on an app to pin it to a row on the main remote
+  screen. Favorites are saved on the phone.
 
 ## Automatic updates
 
