@@ -483,3 +483,20 @@ h1, h2 { margin: 0; }
 .switch[aria-checked="true"] i {
   transform: translateX(20px);
 }
+
+/* ---------- app updates ---------- */
+.update-box { margin: 8px 0 12px; }
+.muted { color: var(--muted); }
+.update-status { font-size: 14px; min-height: 18px; margin: 2px 0 10px; }
+.update-actions { display: flex; gap: 10px; }
+.update-actions .action { flex: 1; }
+/* Small dot on the gear when an update is waiting. */
+#btn-settings { position: relative; }
+#btn-settings.has-update::after {
+  content: "";
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--accent-b, #9a6cff);
+}

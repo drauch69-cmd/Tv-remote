@@ -52,3 +52,17 @@ Later phases add more names (media, volume, text, apps) without changing the for
 If `accessibility` is false, the phone should grey out the D-pad and the
 Back/Home/Recents buttons and show a short hint: “Turn on the Accessibility
 service on the TV”.
+
+## App updates
+
+After authentication the TV sends its update state, and again whenever it changes:
+
+```json
+{"t":"update","update":{"phase":"ready","current":5,"latest":6,"msg":null}}
+```
+
+`phase` is one of `idle`, `checking`, `up_to_date`, `downloading`, `ready`,
+`installing`, `error`. `msg` is an optional human-readable note.
+
+Phone → TV (authenticated only): `{"t":"update_check"}` checks GitHub now;
+`{"t":"update_install"}` installs a downloaded update right away.

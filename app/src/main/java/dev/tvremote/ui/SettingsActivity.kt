@@ -20,6 +20,7 @@ import dev.tvremote.App
 import dev.tvremote.server.NetUtil
 import dev.tvremote.server.RemoteService
 import dev.tvremote.services.RemoteAccessibilityService
+import dev.tvremote.update.UpdateManager
 
 /**
  * The TV-side screen: address to open on the phone, status of each control
@@ -32,6 +33,7 @@ class SettingsActivity : Activity() {
     private lateinit var address: TextView
     private lateinit var status: TextView
     private lateinit var code: TextView
+    private lateinit var update: TextView
 
     private val refresher = object : Runnable {
         override fun run() { refresh(); handler.postDelayed(this, 1000) }
@@ -64,6 +66,19 @@ class SettingsActivity : Activity() {
         col.addView(button("Open App info") {
             startSafely(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
         })
+
+        col.addView(text("Updates", 22f, Color.WHITE, bold = true).padTop(40))
+        update = text("", 18f, Color.WHITE).padTop(8).also { col.addView(it) }
+        col.addView(button("Check for updates") { App.instance.updater.checkNow() })
+        col.addView(button("Install now") { App.instance.updater.installNow() })
+        col.addView(button("Allow this app to install updates") {
+            startSafely(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+        })
+        col.addView(text(
+            "Updates download automatically and install when the TV is idle. " +
+            "The first update asks you to confirm on the TV; after that they install silently.",
+            15f, MUTED,
+        ).padTop(8))
 
         col.addView(text("Paired phones", 22f, Color.WHITE, bold = true).padTop(40))
         col.addView(button("Forget all paired phones") {
@@ -101,6 +116,21 @@ class SettingsActivity : Activity() {
         lines += "– Media controls (phase 2)"
         lines += "– Shizuku (phase 4)"
         status.text = lines.joinToString("\n")
+
+        val u = App.instance.updater
+        val phaseText = when (u.phase) {
+            UpdateManager.Phase.IDLE -> "Not checked yet"
+            UpdateManager.Phase.CHECKING -> "Checking…"
+            UpdateManager.Phase.UP_TO_DATE -> "Up to date"
+            UpdateManager.Phase.DOWNLOADING -> "Downloading build ${u.latestBuild}…"
+            UpdateManager.Phase.READY -> "Build ${u.latestBuild} ready – installs when the TV is idle"
+            UpdateManager.Phase.INSTALLING -> "Installing build ${u.latestBuild}…"
+            UpdateManager.Phase.ERROR -> "Update problem"
+        }
+        val canInstall = if (packageManager.canRequestPackageInstalls()) "" else
+            "\n✕ Not allowed to install updates yet (button below)"
+        update.text = "This is build ${u.currentBuild} · $phaseText" +
+            (u.message?.let { "\n$it" } ?: "") + canInstall
     }
 
     // ------------------------------------------------------------ helpers

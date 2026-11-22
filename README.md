@@ -20,6 +20,7 @@ Phone and TV talk directly over your home Wi-Fi.
 | Phase | What it adds | Status |
 |---|---|---|
 | 1 | Server, pairing, connection status, D-pad, OK, Back, Home, Recents, Menu (opens Search), main phone page | Done |
+| 1.5 | Self-update from GitHub Releases | Done |
 | 2 | Media controls, volume, mute | Planned |
 | 3 | Text input, app launcher, favorites | Planned |
 | 4 | Shizuku backend, plus keys that need Shizuku (Menu, Settings, Power, Search, Mute, any key code) | Planned |
@@ -27,22 +28,28 @@ Phone and TV talk directly over your home Wi-Fi.
 
 ## Getting the APK
 
-Every push to the repository starts a GitHub Actions build named **Build APK**. Each finished build produces an APK you can install.
+Every push starts a GitHub Actions build named **Build APK**. Builds of the default
+branch that are signed with your key (see "Signing key") are also published as a
+GitHub Release, so the newest APK is always at this fixed link:
 
-1. Open the repository on GitHub and click the **Actions** tab.
-2. Click the newest **Build APK** run.
-3. Scroll to **Artifacts** and download `tv-remote-<number>`. This is a zip file.
-4. Unzip it. Inside is the APK, usually called `app-release.apk`.
+```
+https://github.com/drauch69-cmd/Tv-remote/releases/latest/download/tv-remote.apk
+```
+
+You only need this link for the first install. After that the app updates itself
+(see "Automatic updates").
+
+Every run also keeps the APK as an artifact: **Actions** tab → newest **Build APK**
+run → **Artifacts** → `tv-remote-<number>` (a zip; needs you signed in to GitHub).
 
 ### Getting the APK onto the TV without a computer
 
-**Option A: Downloader app**
+**Option A: Downloader app (easiest)**
 
 1. On the TV, install **Downloader** (by AFTVnews) from the TV's app store.
-2. Put the APK somewhere the TV can download it from, such as a private file link you control.
-3. Open Downloader, type in the link, and download the file.
-4. When Android asks, allow Downloader to install unknown apps. The menu wording varies. Look under **Settings → Apps → Security & restrictions** and turn on the install permission for Downloader.
-5. Open the downloaded APK and press **Install**.
+2. Open Downloader and type the fixed link above.
+3. When Android asks, allow Downloader to install unknown apps. The menu wording varies. Look under **Settings → Apps → Security & restrictions** and turn on the install permission for Downloader.
+4. Press **Install**.
 
 **Option B: Send Files to TV**
 
@@ -99,6 +106,23 @@ The key alias is `tvremote`. The key password is taken from the same `KEYSTORE_P
 **If the secrets are missing:** the build still works, but it is signed with a throwaway debug key and the run shows a warning. A debug-signed build will not install over an older build. Uninstall the old app first.
 
 **If the signing key ever changes:** uninstall TV Remote from the TV before installing the new build. This also clears pairing, so every phone must pair again. If you lose `release.jks`, you will need to make a new key and do this once.
+
+## Automatic updates
+
+The TV app keeps itself up to date from the repository's Releases:
+
+- It checks GitHub at start-up and every 6 hours, and downloads any newer build in the background.
+- It installs the update when the TV is idle: the screen is off, or nothing is playing and no phone command has come in for 30 minutes.
+- **Install now** (on the TV screen, or in the phone's settings sheet) installs right away. A dot on the phone's gear icon means an update is waiting.
+- After an update the server restarts on its own and the phone reconnects.
+
+**One-time setup:** in the TV app press **Allow this app to install updates** and turn it on.
+The first update shows Android's "Update this app?" screen, so press **Install now** while
+you're at the TV and confirm. Android 14 then lets the app install later updates silently,
+because it installed itself.
+
+Only builds signed with your key are published, and Android refuses any APK
+signed with a different key, so a tampered download can't be installed.
 
 ## First run on the TV
 

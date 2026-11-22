@@ -7,6 +7,7 @@ import dev.tvremote.data.Prefs
 import dev.tvremote.exec.AccessibilityExecutor
 import dev.tvremote.exec.CommandRouter
 import dev.tvremote.pairing.PairingManager
+import dev.tvremote.update.UpdateManager
 
 /**
  * Holds the app-wide singletons. Everything is created once, here, so the
@@ -19,6 +20,8 @@ class App : Application() {
     lateinit var pairing: PairingManager
         private set
     lateinit var router: CommandRouter
+        private set
+    lateinit var updater: UpdateManager
         private set
 
     override fun onCreate() {
@@ -33,6 +36,7 @@ class App : Application() {
                 AccessibilityExecutor(this),
             )
         )
+        updater = UpdateManager(this)
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Remote server", NotificationManager.IMPORTANCE_MIN)
         )

@@ -31,6 +31,7 @@ class RemoteService : Service() {
             startForeground(NOTIF_ID, buildNotification())
         }
         if (server?.isAlive != true) startServer()
+        App.instance.updater.start()
         return START_STICKY // ask Android to restart us if we're killed
     }
 

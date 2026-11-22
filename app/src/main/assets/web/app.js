@@ -191,6 +191,7 @@
       case 'caps':         return applyCaps(msg.caps);
       case 'pong':         state.lastPong = Date.now(); return;
       case 'err':          return toast(msg.msg || `${msg.c || 'Command'} failed`);
+      case 'update':       return applyUpdate(msg.update);
       default:             return;
     }
   }
@@ -461,6 +462,38 @@
     });
   }
 
+  // ---- app updates ----------------------------------------------------------
+  // The TV checks GitHub on its own; this just shows its state and offers buttons.
+  const UPDATE_TEXT = {
+    idle: 'Not checked yet',
+    checking: 'Checking…',
+    up_to_date: 'Up to date',
+    downloading: 'Downloading update…',
+    ready: 'Update ready – installs when the TV is idle',
+    installing: 'Installing… the remote will reconnect',
+    error: 'Update problem',
+  };
+
+  function applyUpdate(u) {
+    if (!u || typeof u !== 'object') return;
+    const newer = u.latest > u.current;
+    $('update-version').textContent = newer ? `build ${u.current} → ${u.latest}` : `build ${u.current}`;
+    $('update-status').textContent = u.msg || UPDATE_TEXT[u.phase] || '';
+    $('btn-update-install').hidden = u.phase !== 'ready';
+    $('btn-update-check').disabled = u.phase === 'checking' || u.phase === 'downloading' || u.phase === 'installing';
+    $('btn-settings').classList.toggle('has-update', u.phase === 'ready');
+  }
+
+  function bindUpdates() {
+    $('btn-update-check').addEventListener('click', () => {
+      if (!send({ t: 'update_check' })) toast('Not connected');
+    });
+    $('btn-update-install').addEventListener('click', () => {
+      if (send({ t: 'update_install' })) toast('Installing – the remote will reconnect');
+      else toast('Not connected');
+    });
+  }
+
   // ---- sound ----------------------------------------------------------------
   function soundOn() { return store.get(SOUND_KEY) === '1'; }
 
@@ -506,6 +539,7 @@
     bindRemoteButtons();
     bindPairing();
     bindSettings();
+    bindUpdates();
     bindGestureGuards();
     connect();
   }

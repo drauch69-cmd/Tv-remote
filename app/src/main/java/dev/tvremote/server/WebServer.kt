@@ -31,12 +31,14 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
     val pairedClientCount get() = clients.count { it.authed }
 
     private val capsListener: () -> Unit = { broadcast(capsMessage("caps")) }
+    private val updateListener: () -> Unit = { broadcast(updateMessage()) }
 
     fun startServer() {
         // Timeout 0 = never time out idle sockets (NanoHTTPD's default 5 s would
         // drop the WebSocket between presses).
         start(0, false)
         app.router.addCapsListener(capsListener)
+        app.updater.addListener(updateListener)
         app.pairing.onCodeChanged = { code ->
             if (code != null) CodeOverlay.show(code) else CodeOverlay.hide()
         }
@@ -44,6 +46,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
 
     override fun stop() {
         app.router.removeCapsListener(capsListener)
+        app.updater.removeListener(updateListener)
         clients.forEach { it.closeQuietly() }
         super.stop()
     }
@@ -95,6 +98,8 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
     private fun capsMessage(type: String) =
         JSONObject().put("t", type).put("caps", app.router.caps())
 
+    private fun updateMessage() = JSONObject().put("t", "update").put("update", app.updater.toJson())
+
     /** One connected phone. */
     inner class Client(handshake: IHTTPSession) : WebSocket(handshake) {
         @Volatile var authed = false
@@ -118,8 +123,10 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
                 "ping" -> sendJson(JSONObject().put("t", "pong"))
                 "hello" -> {
                     authed = app.pairing.isValidToken(msg.optString("token"))
-                    if (authed) sendJson(capsMessage("auth").put("ok", true).put("name", deviceName()))
-                    else sendJson(JSONObject().put("t", "auth").put("ok", false))
+                    if (authed) {
+                        sendJson(capsMessage("auth").put("ok", true).put("name", deviceName()))
+                        sendJson(updateMessage())
+                    } else sendJson(JSONObject().put("t", "auth").put("ok", false))
                 }
                 "pair_request" -> {
                     val ttl = app.pairing.requestCode()
@@ -128,6 +135,8 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
                 }
                 "pair" -> handlePair(msg.optString("code"))
                 "cmd" -> handleCommand(msg)
+                "update_check" -> if (authed) app.updater.checkNow()
+                "update_install" -> if (authed) app.updater.installNow()
             }
         }
 
@@ -136,6 +145,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
                 is PairingManager.Result.Ok -> {
                     authed = true
                     sendJson(capsMessage("paired").put("token", r.token))
+                    sendJson(updateMessage())
                 }
                 is PairingManager.Result.WrongCode -> sendJson(pairFailed("wrong_code").put("left", r.attemptsLeft))
                 PairingManager.Result.Expired -> sendJson(pairFailed("expired"))
@@ -149,6 +159,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
                 return
             }
             val name = msg.optString("c")
+            app.updater.lastActivity = android.os.SystemClock.elapsedRealtime()
             val error = try {
                 app.router.run(Command(name, msg))
             } catch (e: Exception) {
