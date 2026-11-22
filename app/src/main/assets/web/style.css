@@ -165,6 +165,79 @@ h1, h2 { margin: 0; }
   border: 1px solid rgba(245, 185, 66, .3);
 }
 
+/* ---------- now playing, playback strip, volume row ---------- */
+
+/* Card at the top: app name, title, subtitle. Single lines, cut with an ellipsis. */
+.now {
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  border: 1px solid var(--surface-border);
+}
+
+.now-app,
+.now-title,
+.now-sub {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-app { font-size: 13px; color: var(--muted); }
+.now-title { margin-top: 2px; font-size: 16px; font-weight: 600; }
+.now-sub { margin-top: 2px; font-size: 14px; color: var(--muted); }
+
+/* Sits in the lower part of the screen, right above the main module. */
+.media {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px;
+  transition: opacity .2s ease;
+}
+
+.media.offline { opacity: .6; }
+
+/* Volume unavailable on the TV: same look as the a11y-off controls. */
+.media.vol-off .needs-volume {
+  opacity: .35;
+  pointer-events: none;
+}
+
+.media-row {
+  display: grid;
+  gap: 8px;
+}
+
+.strip-playback { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.strip-volume { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* Shorter on small screens (iPhone SE: 667 px tall). */
+.media-btn {
+  height: min(52px, 7vh);
+  border-radius: 16px;
+}
+
+.media-btn .ico svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Play/pause: accent gradient, like OK. */
+.btn.accent {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+}
+
+.btn.accent.pressed {
+  transform: scale(.95);
+  filter: brightness(.8);
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+}
+
 /* ---------- main module ---------- */
 
 .module {

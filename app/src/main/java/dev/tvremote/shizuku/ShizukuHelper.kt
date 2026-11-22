@@ -69,31 +69,52 @@ object ShizukuHelper {
     }
 
     /**
+     * Grants what's missing in one go: the Accessibility service ([a11yService])
+     * and/or media-session access via our notification listener ([listenerService]).
+     * Pass null for anything that's already on. [done] gets null on success.
+     */
+    fun grantAll(packageName: String, a11yService: String?, listenerService: String?, done: (String?) -> Unit) {
+        if (a11yService == null && listenerService == null) return done(null)
+        worker.execute {
+            val errors = mutableListOf<String>()
+            if (listenerService != null) {
+                val r = try {
+                    exec("appops set $packageName ACCESS_RESTRICTED_SETTINGS allow")
+                    exec("cmd notification allow_listener $packageName/$listenerService")
+                } catch (e: Exception) { Result(1, e.message ?: "error") }
+                if (!r.ok) errors += "media access: ${r.out}"
+            }
+            if (a11yService != null) enableAccessibilityBlocking(packageName, a11yService)?.let { errors += it }
+            done(errors.takeIf { it.isNotEmpty() }?.joinToString("; "))
+        }
+    }
+
+    /**
      * Lifts the restricted-settings block and turns on our Accessibility service,
      * keeping any other services that are already on. Runs in the background;
      * [done] gets a short message for the user (null = success).
      */
     fun enableAccessibility(packageName: String, serviceClass: String, done: (String?) -> Unit) {
-        worker.execute {
-            val msg = try {
-                if (state() != State.READY) {
-                    "Shizuku isn't running or TV Remote isn't allowed in it"
-                } else {
-                    val component = "$packageName/$serviceClass"
-                    exec("appops set $packageName ACCESS_RESTRICTED_SETTINGS allow")
-                    val current = exec("settings get secure enabled_accessibility_services").out
-                        .takeUnless { it.isBlank() || it == "null" }
-                    val list = current?.split(':')?.filter { it.isNotBlank() }.orEmpty()
-                    val merged = (list.filter { it != component } + component).joinToString(":")
-                    val put = exec("settings put secure enabled_accessibility_services '$merged'")
-                    exec("settings put secure accessibility_enabled 1")
-                    if (put.ok) null else "Shizuku command failed: ${put.out}"
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "enableAccessibility failed", e)
-                "Shizuku error: ${e.message}"
-            }
-            done(msg)
+        worker.execute { done(enableAccessibilityBlocking(packageName, serviceClass)) }
+    }
+
+    /** The actual work for [enableAccessibility]; runs on the calling thread. */
+    private fun enableAccessibilityBlocking(packageName: String, serviceClass: String): String? = try {
+        if (state() != State.READY) {
+            "Shizuku isn't running or TV Remote isn't allowed in it"
+        } else {
+            val component = "$packageName/$serviceClass"
+            exec("appops set $packageName ACCESS_RESTRICTED_SETTINGS allow")
+            val current = exec("settings get secure enabled_accessibility_services").out
+                .takeUnless { it.isBlank() || it == "null" }
+            val list = current?.split(':')?.filter { it.isNotBlank() }.orEmpty()
+            val merged = (list.filter { it != component } + component).joinToString(":")
+            val put = exec("settings put secure enabled_accessibility_services '$merged'")
+            exec("settings put secure accessibility_enabled 1")
+            if (put.ok) null else "Shizuku command failed: ${put.out}"
         }
+    } catch (e: Exception) {
+        Log.e(TAG, "enableAccessibility failed", e)
+        "Shizuku error: ${e.message}"
     }
 }

@@ -19,6 +19,7 @@ import android.widget.Toast
 import dev.tvremote.App
 import dev.tvremote.server.NetUtil
 import dev.tvremote.server.RemoteService
+import dev.tvremote.services.MediaListenerService
 import dev.tvremote.services.RemoteAccessibilityService
 import dev.tvremote.shizuku.ShizukuHelper
 import dev.tvremote.update.UpdateManager
@@ -55,9 +56,10 @@ class SettingsActivity : Activity() {
         status = text("", 18f, Color.WHITE).padTop(24).also { col.addView(it) }
 
         col.addView(text("Permissions", 22f, Color.WHITE, bold = true).padTop(40))
-        col.addView(button("Turn on Accessibility with Shizuku") { enableWithShizuku() })
+        col.addView(button("Set up permissions with Shizuku") { enableWithShizuku() })
         col.addView(text(
-            "Easiest way on Google TV: start Shizuku, press this, and allow TV Remote when Shizuku asks.",
+            "Easiest way on Google TV: start Shizuku, press this, and allow TV Remote when Shizuku asks. " +
+            "It turns on the Accessibility service and media access (now playing, exact seeking).",
             15f, MUTED,
         ).padTop(8))
         col.addView(button("Open Accessibility settings") {
@@ -119,7 +121,9 @@ class SettingsActivity : Activity() {
         }
         lines += mark(RemoteAccessibilityService.instance != null) +
             " Accessibility service (D-pad, Back, Home, Recents)"
-        lines += "– Media controls (phase 2)"
+        lines += mark(MediaListenerService.connected) +
+            " Media access (now playing, 10-second seek) · play/pause works either way"
+        lines += "✓ Volume
         lines += when (ShizukuHelper.state()) {
             ShizukuHelper.State.READY -> "✓ Shizuku ready"
             ShizukuHelper.State.NO_PERMISSION -> "✕ Shizuku running, TV Remote not allowed yet"
@@ -154,8 +158,11 @@ class SettingsActivity : Activity() {
     }
 
     private fun runEnable() {
-        ShizukuHelper.enableAccessibility(packageName, RemoteAccessibilityService::class.java.name) { err ->
-            runOnUiThread { toast(err ?: "Accessibility turned on ✓") }
+        if (RemoteAccessibilityService.instance != null && MediaListenerService.connected) {
+            return toast("Everything is already on ✓")
+        }
+        App.instance.ensurePermissionsViaShizuku { err ->
+            runOnUiThread { toast(err ?: "Permissions turned on ✓") }
         }
     }
 

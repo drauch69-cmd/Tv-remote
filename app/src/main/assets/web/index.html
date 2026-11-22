@@ -27,11 +27,49 @@
     <button id="btn-settings" class="icon-btn" type="button" aria-label="Settings" data-icon="gear"></button>
   </header>
 
-  <!-- Reserved for later phases (volume and playback rows). Keep empty for now. -->
-  <section id="extras"></section>
+  <!-- Now-playing card under the bar. Hidden when the TV reports nothing playing. -->
+  <section id="extras">
+    <div id="now" class="now" hidden>
+      <p id="now-app" class="now-app"></p>
+      <p id="now-title" class="now-title"></p>
+      <p id="now-sub" class="now-sub"></p>
+    </div>
+  </section>
 
   <!-- Shown when the TV's Accessibility service is off. -->
   <div id="a11y-banner" class="banner" hidden>Turn on the Accessibility service on the TV (TV Remote app → settings)</div>
+
+  <!-- Playback strip and volume row, directly above the main module. -->
+  <section id="media" class="media">
+    <div class="media-row strip-playback" role="group" aria-label="Playback">
+      <button class="btn media-btn" type="button" data-cmd="PREVIOUS" aria-label="Previous">
+        <span class="ico" data-icon="skip-back"></span>
+      </button>
+      <button class="btn media-btn" type="button" data-cmd="REWIND" aria-label="Rewind">
+        <span class="ico" data-icon="rewind"></span>
+      </button>
+      <button id="btn-play" class="btn media-btn accent" type="button" data-cmd="PLAY_PAUSE" aria-label="Play">
+        <span id="play-icon" class="ico" data-icon="play"></span>
+      </button>
+      <button class="btn media-btn" type="button" data-cmd="FAST_FORWARD" aria-label="Fast forward">
+        <span class="ico" data-icon="fast-forward"></span>
+      </button>
+      <button class="btn media-btn" type="button" data-cmd="NEXT" aria-label="Next">
+        <span class="ico" data-icon="skip-forward"></span>
+      </button>
+    </div>
+    <div class="media-row strip-volume" role="group" aria-label="Volume">
+      <button class="btn media-btn needs-volume" type="button" data-cmd="VOLUME_DOWN" data-repeat="1" aria-label="Volume down">
+        <span class="ico" data-icon="vol-down"></span>
+      </button>
+      <button class="btn media-btn needs-volume" type="button" data-cmd="MUTE" aria-label="Mute">
+        <span class="ico" data-icon="mute"></span>
+      </button>
+      <button class="btn media-btn needs-volume" type="button" data-cmd="VOLUME_UP" data-repeat="1" aria-label="Volume up">
+        <span class="ico" data-icon="vol-up"></span>
+      </button>
+    </div>
+  </section>
 
   <!-- Main module: D-pad and 2×2 nav grid in one row, anchored to the lower half. -->
   <main id="module" class="module" data-hand="right">

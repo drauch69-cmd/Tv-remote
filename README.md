@@ -21,7 +21,7 @@ Phone and TV talk directly over your home Wi-Fi.
 |---|---|---|
 | 1 | Server, pairing, connection status, D-pad, OK, Back, Home, Recents, Menu (opens Search), main phone page | Done |
 | 1.5 | Self-update from GitHub Releases | Done |
-| 2 | Media controls, volume, mute | Planned |
+| 2 | Media controls, now playing, volume, mute | Done |
 | 3 | Text input, app launcher, favorites | Planned |
 | 4 | Shizuku backend, plus keys that need Shizuku (Menu, Settings, Power, Search, Mute, any key code) | Planned |
 | 5 | Macros, and a guide for iOS Shortcuts | Planned |
@@ -106,6 +106,19 @@ The key alias is `tvremote`. The key password is taken from the same `KEYSTORE_P
 **If the secrets are missing:** the build still works, but it is signed with a throwaway debug key and the run shows a warning. A debug-signed build will not install over an older build. Uninstall the old app first.
 
 **If the signing key ever changes:** uninstall TV Remote from the TV before installing the new build. This also clears pairing, so every phone must pair again. If you lose `release.jks`, you will need to make a new key and do this once.
+
+## Media access (now playing and exact seeking)
+
+Play/pause, next, previous, rewind and fast-forward always work: they're sent as media keys.
+With **media access** on, the phone also shows what's playing, and rewind / fast-forward jump
+exactly 10 seconds. Android only gives this to apps with notification access, which Google TV
+hides, so turn it on with **Set up permissions with Shizuku** in the TV app, or by ADB:
+
+```
+adb shell cmd notification allow_listener dev.tvremote/dev.tvremote.services.MediaListenerService
+```
+
+The app only uses this to see the media session; it doesn't read your notifications.
 
 ## Automatic updates
 

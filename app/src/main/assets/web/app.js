@@ -2,7 +2,7 @@
  * TV Remote - phone page logic.
  * Plain JS, no build step. Wire format and flow: docs/protocol.md.
  * Sections: constants, icons, storage, status, connection, pairing,
- * buttons, caps, settings, sound, init.
+ * buttons, now playing, caps, settings, sound, init.
  */
 (() => {
   'use strict';
@@ -53,6 +53,15 @@
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4.5-4.5"/>',
     gear: '<circle cx="12" cy="12" r="8" stroke-dasharray="3 2.4"/><circle cx="12" cy="12" r="3"/>',
     close: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
+    'skip-back': '<path d="M5 5v14"/><path d="M19 5v14l-10-7z"/>',
+    rewind: '<path d="M11 6l-7 6 7 6z"/><path d="M21 6l-7 6 7 6z"/>',
+    play: '<path d="M7 5l12 7-12 7z"/>',
+    pause: '<path d="M8 5v14"/><path d="M16 5v14"/>',
+    'fast-forward': '<path d="M13 6l7 6-7 6z"/><path d="M3 6l7 6-7 6z"/>',
+    'skip-forward': '<path d="M19 5v14"/><path d="M5 5v14l10-7z"/>',
+    'vol-down': '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 12h5"/>',
+    mute: '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 9.5l5 5"/><path d="M21 9.5l-5 5"/>',
+    'vol-up': '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 12h5"/><path d="M18.5 9.5v5"/>',
   };
 
   function iconSvg(name) {
@@ -88,6 +97,7 @@
     pill.textContent = STATUS_TEXT[kind];
     // Dim the remote unless the TV is connected and paired.
     $('module').classList.toggle('offline', kind !== 'connected');
+    $('media').classList.toggle('offline', kind !== 'connected');
   }
 
   function toast(text) {
@@ -189,6 +199,7 @@
       case 'paired':       return onPaired(msg);
       case 'pair_failed':  return onPairFailed(msg);
       case 'caps':         return applyCaps(msg.caps);
+      case 'now':          return applyNow(msg.now);
       case 'pong':         state.lastPong = Date.now(); return;
       case 'err':          return toast(msg.msg || `${msg.c || 'Command'} failed`);
       case 'update':       return applyUpdate(msg.update);
@@ -424,6 +435,24 @@
     document.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  // ---- now playing ----------------------------------------------------------
+  // The TV sends null when nothing plays. Play/pause icon follows `playing`.
+  function applyNow(now) {
+    const info = now && typeof now === 'object' ? now : null;
+    $('now').hidden = !info;
+    if (info) {
+      $('now-app').textContent = info.app || '';
+      $('now-app').hidden = !info.app;
+      $('now-title').textContent = info.title || '';
+      $('now-sub').textContent = info.subtitle || '';
+      $('now-sub').hidden = !info.subtitle;
+    }
+
+    const playing = !!info && info.playing === true;
+    $('play-icon').innerHTML = iconSvg(playing ? 'pause' : 'play');
+    $('btn-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  }
+
   // ---- caps -----------------------------------------------------------------
   // Runs on every auth, paired and caps message.
   function applyCaps(caps) {
@@ -431,6 +460,9 @@
     const noAccessibility = caps.accessibility === false;
     $('module').classList.toggle('a11y-off', noAccessibility);
     $('a11y-banner').hidden = !noAccessibility;
+
+    // Volume row greys out when the TV cannot change volume.
+    $('media').classList.toggle('vol-off', caps.volume === false);
 
     // MENU sends the same key either way; only the label and icon change.
     const useMenu = caps.menu === 'menu';

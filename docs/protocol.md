@@ -66,3 +66,24 @@ After authentication the TV sends its update state, and again whenever it change
 
 Phone → TV (authenticated only): `{"t":"update_check"}` checks GitHub now;
 `{"t":"update_install"}` installs a downloaded update right away.
+
+## Phase 2: media and volume
+
+New command names (same `{"t":"cmd","c":NAME}` format):
+`PLAY_PAUSE`, `NEXT`, `PREVIOUS`, `REWIND`, `FAST_FORWARD`,
+`VOLUME_UP`, `VOLUME_DOWN`, `MUTE`. `VOLUME_UP`/`VOLUME_DOWN` may be sent with
+`"repeat":true` while held.
+
+New caps fields: `"media"` (true when the TV can read the active media session:
+now-playing info and 10-second seeking) and `"volume"` (true when volume works).
+Playback buttons always work, even when `media` is false (they fall back to media keys).
+
+Now playing — the TV sends this after auth and whenever it changes:
+
+```json
+{"t":"now","now":{"title":"Episode 3","subtitle":"Show name","app":"Netflix","playing":true}}
+{"t":"now","now":null}
+```
+
+`subtitle` and `app` may be empty strings. `now` is null when nothing is playing
+or when `media` is false.
