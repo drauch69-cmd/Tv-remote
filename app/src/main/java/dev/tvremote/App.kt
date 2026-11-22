@@ -7,7 +7,10 @@ import dev.tvremote.data.Prefs
 import dev.tvremote.exec.AccessibilityExecutor
 import dev.tvremote.exec.CommandRouter
 import dev.tvremote.pairing.PairingManager
+import dev.tvremote.services.RemoteAccessibilityService
+import dev.tvremote.shizuku.ShizukuHelper
 import dev.tvremote.update.UpdateManager
+import rikka.shizuku.Shizuku
 
 /**
  * Holds the app-wide singletons. Everything is created once, here, so the
@@ -37,9 +40,19 @@ class App : Application() {
             )
         )
         updater = UpdateManager(this)
+        // When Shizuku becomes available, use it to switch our Accessibility
+        // service back on if it's off (e.g. after an update or a fresh install).
+        Shizuku.addBinderReceivedListenerSticky { ensureAccessibilityViaShizuku() }
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Remote server", NotificationManager.IMPORTANCE_MIN)
         )
+    }
+
+    /** Turns on the Accessibility service through Shizuku, if it's off and Shizuku is ready. */
+    fun ensureAccessibilityViaShizuku() {
+        if (RemoteAccessibilityService.instance != null) return
+        if (ShizukuHelper.state() != ShizukuHelper.State.READY) return
+        ShizukuHelper.enableAccessibility(packageName, RemoteAccessibilityService::class.java.name) {}
     }
 
     companion object {

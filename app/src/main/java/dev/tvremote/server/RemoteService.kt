@@ -32,6 +32,7 @@ class RemoteService : Service() {
         }
         if (server?.isAlive != true) startServer()
         App.instance.updater.start()
+        App.instance.ensureAccessibilityViaShizuku()
         return START_STICKY // ask Android to restart us if we're killed
     }
 

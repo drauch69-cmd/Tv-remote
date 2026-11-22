@@ -138,6 +138,17 @@ signed with a different key, so a tampered download can't be installed.
 
 The Accessibility service lets the app press D-pad, OK, Back, Home and Recents, and show the pairing code on screen. Without it, the D-pad and the Back, Home and Recents buttons are greyed out on the phone.
 
+**Easiest on Google TV: use Shizuku.** Google TV usually hides the "Allow restricted
+settings" option, so the toggle stays greyed out. If Shizuku is running:
+
+1. In TV Remote, press **Turn on Accessibility with Shizuku**.
+2. Allow TV Remote when Shizuku asks.
+
+That's it. From then on, whenever Shizuku is running and the service has been switched
+off (for example after an update), TV Remote turns it back on by itself.
+
+Without Shizuku, use the steps below.
+
 1. In the TV Remote app, press **Open Accessibility settings**. Find **TV Remote control** in the list and turn it on. Confirm if asked.
 2. If it is greyed out or says **"Restricted setting"**, Android 13 and later is blocking apps installed from outside the store. Do this:
    1. Go back to TV Remote and press **Open App info**.
@@ -162,7 +173,7 @@ The Accessibility service lets the app press D-pad, OK, Back, Home and Recents, 
 
    Then add TV Remote to that list instead, joining the entries with a colon (`:`).
 
-Phase 4 will let the app turn this on by itself, using Shizuku.
+
 
 ## Setting up your phone
 
@@ -198,6 +209,10 @@ The code is valid for 2 minutes. After 5 wrong tries, pairing is locked for 1 mi
 - **Text input (phase 3):** works in normal text fields. Some apps, such as YouTube, use their own keyboard and need the Shizuku fallback.
 
 ## Troubleshooting
+
+**The page won't load and the iPhone has a VPN on.** Most VPNs send all traffic through
+the tunnel, so the phone can't reach the TV. Turn the VPN off, or turn on its
+"Allow LAN access" / "Exclude local networks" option.
 
 **The page won't load.**
 - Is the phone on the same Wi-Fi as the TV, and not a guest network?

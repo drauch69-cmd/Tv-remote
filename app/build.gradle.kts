@@ -50,4 +50,7 @@ android {
 dependencies {
     // Tiny embedded HTTP + WebSocket server (~150 KB). The only runtime dependency.
     implementation("org.nanohttpd:nanohttpd-websocket:2.3.1")
+    // Optional ADB-level backend (only used when Shizuku is running on the TV).
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
 }

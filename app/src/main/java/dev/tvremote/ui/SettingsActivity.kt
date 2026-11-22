@@ -20,6 +20,7 @@ import dev.tvremote.App
 import dev.tvremote.server.NetUtil
 import dev.tvremote.server.RemoteService
 import dev.tvremote.services.RemoteAccessibilityService
+import dev.tvremote.shizuku.ShizukuHelper
 import dev.tvremote.update.UpdateManager
 
 /**
@@ -54,6 +55,11 @@ class SettingsActivity : Activity() {
         status = text("", 18f, Color.WHITE).padTop(24).also { col.addView(it) }
 
         col.addView(text("Permissions", 22f, Color.WHITE, bold = true).padTop(40))
+        col.addView(button("Turn on Accessibility with Shizuku") { enableWithShizuku() })
+        col.addView(text(
+            "Easiest way on Google TV: start Shizuku, press this, and allow TV Remote when Shizuku asks.",
+            15f, MUTED,
+        ).padTop(8))
         col.addView(button("Open Accessibility settings") {
             startSafely(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
@@ -114,7 +120,11 @@ class SettingsActivity : Activity() {
         lines += mark(RemoteAccessibilityService.instance != null) +
             " Accessibility service (D-pad, Back, Home, Recents)"
         lines += "– Media controls (phase 2)"
-        lines += "– Shizuku (phase 4)"
+        lines += when (ShizukuHelper.state()) {
+            ShizukuHelper.State.READY -> "✓ Shizuku ready"
+            ShizukuHelper.State.NO_PERMISSION -> "✕ Shizuku running, TV Remote not allowed yet"
+            ShizukuHelper.State.NOT_RUNNING -> "✕ Shizuku not running (optional)"
+        }
         status.text = lines.joinToString("\n")
 
         val u = App.instance.updater
@@ -132,6 +142,24 @@ class SettingsActivity : Activity() {
         update.text = "This is build ${u.currentBuild} · $phaseText" +
             (u.message?.let { "\n$it" } ?: "") + canInstall
     }
+
+    private fun enableWithShizuku() {
+        when (ShizukuHelper.state()) {
+            ShizukuHelper.State.NOT_RUNNING -> toast("Start Shizuku first, then press this again")
+            ShizukuHelper.State.NO_PERMISSION -> ShizukuHelper.requestPermission { granted ->
+                if (granted) runEnable() else runOnUiThread { toast("TV Remote wasn't allowed in Shizuku") }
+            }
+            ShizukuHelper.State.READY -> runEnable()
+        }
+    }
+
+    private fun runEnable() {
+        ShizukuHelper.enableAccessibility(packageName, RemoteAccessibilityService::class.java.name) { err ->
+            runOnUiThread { toast(err ?: "Accessibility turned on ✓") }
+        }
+    }
+
+    private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()
 
     // ------------------------------------------------------------ helpers
 
