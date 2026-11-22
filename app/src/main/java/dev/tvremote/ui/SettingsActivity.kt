@@ -123,7 +123,7 @@ class SettingsActivity : Activity() {
             " Accessibility service (D-pad, Back, Home, Recents)"
         lines += mark(MediaListenerService.connected) +
             " Media access (now playing, 10-second seek) · play/pause works either way"
-        lines += "✓ Volume
+        lines += "✓ Volume"
         lines += when (ShizukuHelper.state()) {
             ShizukuHelper.State.READY -> "✓ Shizuku ready"
             ShizukuHelper.State.NO_PERMISSION -> "✕ Shizuku running, TV Remote not allowed yet"
