@@ -8,6 +8,7 @@ import dev.tvremote.pairing.CodeOverlay
 import dev.tvremote.pairing.PairingManager
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoHTTPD.IHTTPSession
+import fi.iki.elonen.NanoHTTPD.Method
 import fi.iki.elonen.NanoHTTPD.Response
 import fi.iki.elonen.NanoWSD
 import fi.iki.elonen.NanoWSD.WebSocket
@@ -33,6 +34,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
     private val capsListener: () -> Unit = { broadcast(capsMessage("caps")) }
     private val updateListener: () -> Unit = { broadcast(updateMessage()) }
     private val nowListener: () -> Unit = { broadcast(nowMessage()) }
+    private val macrosListener: () -> Unit = { broadcast(macrosMessage()) }
 
     fun startServer() {
         // Timeout 0 = never time out idle sockets (NanoHTTPD's default 5 s would
@@ -41,6 +43,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
         app.router.addCapsListener(capsListener)
         app.updater.addListener(updateListener)
         app.media.addListener(nowListener)
+        app.macros.addListener(macrosListener)
         app.pairing.onCodeChanged = { code ->
             if (code != null) CodeOverlay.show(code) else CodeOverlay.hide()
         }
@@ -50,6 +53,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
         app.router.removeCapsListener(capsListener)
         app.updater.removeListener(updateListener)
         app.media.removeListener(nowListener)
+        app.macros.removeListener(macrosListener)
         clients.forEach { it.closeQuietly() }
         super.stop()
     }
@@ -66,6 +70,7 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
 
     override fun serveHttp(session: IHTTPSession): Response {
         if (session.uri == "/icon") return serveIcon(session)
+        if (session.uri.startsWith("/api/")) return serveApi(session)
         var path = session.uri.trimStart('/')
         if (path.isEmpty()) path = "index.html"
         if (path.contains("..")) return notFound()
@@ -91,6 +96,51 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
             .apply { addHeader("Cache-Control", "private, max-age=86400") }
     }
 
+    // ------------------------------------------------------------ HTTP API
+    // For iOS Shortcuts and other scripts: same commands as the WebSocket.
+    // Token via ?token= or "Authorization: Bearer <token>".
+
+    private fun serveApi(session: IHTTPSession): Response {
+        val token = session.parameters["token"]?.firstOrNull()
+            ?: session.headers["authorization"]?.removePrefix("Bearer ")?.trim()
+        if (!app.pairing.isValidToken(token)) return json(Response.Status.FORBIDDEN, error("Missing or wrong token"))
+
+        return when (session.uri.trimEnd('/')) {
+            "/api/macros" -> json(Response.Status.OK, JSONObject().put("ok", true).put("macros", app.macros.all()))
+            "/api/cmd" -> {
+                val args = apiArgs(session) ?: return json(Response.Status.BAD_REQUEST, error("Body must be JSON"))
+                val name = args.optString("c")
+                if (name.isEmpty()) return json(Response.Status.BAD_REQUEST, error("Missing c (command name)"))
+                app.updater.lastActivity = android.os.SystemClock.elapsedRealtime()
+                val err = try { app.router.run(Command(name, args)) } catch (e: Exception) { e.message ?: "failed" }
+                if (err == null) json(Response.Status.OK, JSONObject().put("ok", true))
+                else json(Response.Status.BAD_REQUEST, error(err))
+            }
+            else -> json(Response.Status.NOT_FOUND, error("Unknown endpoint"))
+        }
+    }
+
+    /** Command args from a JSON POST body, or from query parameters for GET. */
+    private fun apiArgs(session: IHTTPSession): JSONObject? {
+        if (session.method == Method.POST) {
+            val files = HashMap<String, String>()
+            session.parseBody(files)
+            val body = files["postData"] ?: return JSONObject()
+            return try { JSONObject(body) } catch (_: Exception) { null }
+        }
+        val args = JSONObject()
+        for ((k, v) in session.parameters) if (k != "token") v.firstOrNull()?.let { value ->
+            // Numbers stay numbers (e.g. code=172), everything else is text.
+            args.put(k, if (k == "code") value.toIntOrNull() ?: value else value)
+        }
+        return args
+    }
+
+    private fun error(msg: String) = JSONObject().put("ok", false).put("error", msg)
+
+    private fun json(status: Response.Status, body: JSONObject) =
+        NanoHTTPD.newFixedLengthResponse(status, "application/json", body.toString())
+
     private fun notFound() =
         NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "Not found")
 
@@ -113,6 +163,8 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
 
     private fun capsMessage(type: String) =
         JSONObject().put("t", type).put("caps", app.router.caps())
+
+    private fun macrosMessage() = JSONObject().put("t", "macros").put("macros", app.macros.all())
 
     private fun nowMessage() = JSONObject().put("t", "now").put("now", app.media.nowPlaying() ?: JSONObject.NULL)
 
@@ -155,6 +207,13 @@ class WebServer(private val context: Context, port: Int) : NanoWSD(port) {
                 "pair" -> handlePair(msg.optString("code"))
                 "cmd" -> handleCommand(msg)
                 "apps_get" -> if (authed) sendApps()
+                "macros_get" -> if (authed) sendJson(macrosMessage())
+                "macro_save" -> if (authed) try {
+                    app.macros.save(msg.optJSONObject("macro") ?: JSONObject(), msg.optString("old").ifEmpty { null })
+                } catch (e: IllegalArgumentException) {
+                    sendJson(JSONObject().put("t", "err").put("c", "MACRO").put("msg", e.message))
+                }
+                "macro_delete" -> if (authed) app.macros.delete(msg.optString("name"))
                 "update_check" -> if (authed) app.updater.checkNow()
                 "update_install" -> if (authed) app.updater.installNow()
             }

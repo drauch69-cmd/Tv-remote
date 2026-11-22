@@ -21,7 +21,14 @@ class Prefs(context: Context) {
         sp.edit().remove(KEY_TOKENS).apply()
     }
 
+    /** Saved macros, as a JSON array string. */
+    @get:Synchronized @set:Synchronized
+    var macrosJson: String
+        get() = sp.getString(KEY_MACROS, "[]")!!
+        set(value) { sp.edit().putString(KEY_MACROS, value).apply() }
+
     private companion object {
+        const val KEY_MACROS = "macros"
         const val KEY_TOKENS = "tokens"
     }
 }

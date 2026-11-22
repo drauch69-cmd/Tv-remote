@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import dev.tvremote.data.Prefs
 import dev.tvremote.exec.AccessibilityExecutor
 import dev.tvremote.exec.AppLauncher
+import dev.tvremote.exec.MacroExecutor
+import dev.tvremote.exec.MacroStore
 import dev.tvremote.exec.ShizukuFallbackExecutor
 import dev.tvremote.exec.ShizukuKeyExecutor
 import dev.tvremote.exec.CommandRouter
@@ -38,6 +40,8 @@ class App : Application() {
         private set
     lateinit var launcher: AppLauncher
         private set
+    lateinit var macros: MacroStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -46,6 +50,7 @@ class App : Application() {
         pairing = PairingManager(prefs)
         media = MediaWatcher(this)
         launcher = AppLauncher(this)
+        macros = MacroStore(prefs)
         // Order matters: the router asks each backend in turn and uses the
         // first one that is available and supports the command.
         router = CommandRouter(
@@ -56,6 +61,7 @@ class App : Application() {
                 MediaKeyExecutor(this),        // otherwise plain media keys
                 VolumeExecutor(this),          // Android volume when Shizuku is off
                 ShizukuFallbackExecutor(launcher), // typing into app keyboards, launching
+                MacroExecutor(macros) { router },   // saved command sequences
             )
         )
         updater = UpdateManager(this)

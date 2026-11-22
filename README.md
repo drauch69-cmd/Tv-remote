@@ -24,7 +24,7 @@ Phone and TV talk directly over your home Wi-Fi.
 | 2 | Media controls, now playing, volume, mute | Done |
 | 3 | Text input, app launcher, favorites | Done |
 | 4 | Shizuku backend: real volume/Menu keys, typing fallback; More tab with Settings, Search, Sleep, Power, Mute and any key code | Done |
-| 5 | Macros, and a guide for iOS Shortcuts | Planned |
+| 5 | Macros, HTTP API, and a guide for iOS Shortcuts | Done |
 
 ## Getting the APK
 
@@ -140,6 +140,18 @@ The TV Remote screen shows which one is in use.
   Android key code (Guide, Info, colour buttons...). Everything except Search and Mute needs Shizuku.
 - **Favorites:** tap the star on an app to pin it to a row on the main remote
   screen. Favorites are saved on the phone.
+
+## Macros and iOS Shortcuts
+
+- **Macros:** More tab → **Record**, use the remote as normal (presses still reach
+  the TV, and pauses between them are kept), then **Save** and name it. Tap a macro
+  to run it; **Edit** to rename, remove steps, add waits or delete it. Macros are
+  stored on the TV, so every paired phone and every shortcut sees them.
+- **iOS Shortcuts:** every command, including running a macro, is also available
+  as a simple web address for the Shortcuts app's "Get Contents of URL" action.
+  That covers Siri, Back Tap, widgets and automations.
+  See **[docs/shortcuts.md](docs/shortcuts.md)**. Your address and token are in the
+  remote page's settings sheet.
 
 ## Automatic updates
 

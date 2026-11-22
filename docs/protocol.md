@@ -114,3 +114,43 @@ in display order.
 ### New caps fields
 `"text"`: text input works; `"apps"`: launching works; `"shizuku"`: Shizuku
 backend ready (then `"menu"` is `"menu"`).
+
+## Phase 5: macros and the HTTP API
+
+### Macros (stored on the TV)
+
+A macro is a name plus a list of steps. A step is any command object (as sent in
+`cmd`, without `t`), or a wait:
+
+```json
+{"name":"Movie night","steps":[
+  {"c":"LAUNCH","pkg":"com.netflix.ninja"},
+  {"c":"WAIT","ms":3000},
+  {"c":"DPAD_CENTER"}
+]}
+```
+
+Rules: max 50 steps; `WAIT` max 30000 ms; the TV adds a 300 ms gap between
+other steps; a macro can't run another macro; a failing step is skipped.
+
+Phone → TV (authenticated):
+- `{"t":"macros_get"}` → TV replies `{"t":"macros","macros":[...]}`. The TV also
+  broadcasts this message to all phones whenever the list changes.
+- `{"t":"macro_save","macro":{...},"old":"Previous name"}` — saves (replaces a
+  macro with the same name; `old` is optional and renames).
+- `{"t":"macro_delete","name":"Movie night"}`
+- Run: `{"t":"cmd","c":"MACRO","name":"Movie night"}`
+
+### HTTP API (for iOS Shortcuts)
+
+Every command can also be sent without the web page:
+
+- `GET /api/cmd?token=<token>&c=PLAY_PAUSE` — extra args as query parameters:
+  `pkg` (LAUNCH), `text` (TEXT), `code` (KEY), `name` (MACRO).
+- `POST /api/cmd` with header `Authorization: Bearer <token>` and a JSON body
+  like `{"c":"MACRO","name":"Movie night"}`.
+- `GET /api/macros?token=<token>` → `{"ok":true,"macros":[...]}`.
+
+Responses: `200 {"ok":true}`; `400 {"ok":false,"error":"..."}`; `403` when the
+token is missing or wrong. The token is the phone's pairing token (shown in the
+phone's settings sheet).
